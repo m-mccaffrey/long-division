@@ -261,7 +261,6 @@ function newProblem() {
 
 function renderBracket() {
   const { dividend, divisor } = state.problem;
-  document.getElementById("ldPanel").style.setProperty("--ld-col-width", `${String(dividend).length + 1}ch`);
   document.getElementById("ldDivisor").textContent = divisor;
   document.getElementById("ldDividend").textContent = dividend.toLocaleString("en-US");
   document.getElementById("ldQuotientStack").innerHTML = '<div class="ld-quotient-term">&nbsp;</div>';
@@ -392,16 +391,18 @@ function updateQuotientStack(partials, pendingVal) {
     row.textContent = (partials.length === 0 ? "" : "+ ") + pendingVal;
     stack.appendChild(row);
   }
-  if (partials.length > 1) {
-    const rule = document.createElement("div");
-    rule.className = "ld-quotient-rule";
-    stack.appendChild(rule);
+}
 
-    const total = document.createElement("div");
-    total.className = "ld-quotient-total";
-    total.textContent = partials.reduce((a, b) => a + b, 0).toLocaleString("en-US");
-    stack.appendChild(total);
-  }
+function addQuotientTotal(total) {
+  const stack = document.getElementById("ldQuotientStack");
+  const rule = document.createElement("div");
+  rule.className = "ld-quotient-rule";
+  stack.appendChild(rule);
+
+  const totalRow = document.createElement("div");
+  totalRow.className = "ld-quotient-total";
+  totalRow.textContent = total.toLocaleString("en-US");
+  stack.appendChild(totalRow);
 }
 
 function appendProductRow(product) {
@@ -507,6 +508,7 @@ function handleFinalSubmit() {
 
   if (qVal === quotient && rVal === remainder) {
     showFeedback(`Correct! ${state.problem.dividend.toLocaleString("en-US")} ÷ ${g.divisor} = ${quotient} remainder ${remainder}.`, true);
+    addQuotientTotal(qVal);
     popCard();
     addPoints(DIFFICULTY[state.difficulty].points);
     registerSolve();
