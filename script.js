@@ -300,6 +300,8 @@ function startGuided() {
     currentRemainder: dividend,
     divisor,
     partials: [],
+    pendingMultiplier: null,
+    pendingProduct: null,
   };
   renderChooseControls();
 }
@@ -307,22 +309,52 @@ function startGuided() {
 function renderChooseControls() {
   const controlRow = document.getElementById("controlRow");
   controlRow.innerHTML = `
-    <input type="number" id="multiplierInput" class="num-input" placeholder="easy number" min="1" />
-    <button class="btn primary" id="submitMultiplierBtn">Multiply &amp; Subtract</button>
+    <input type="number" id="easyNumberInput" class="num-input" placeholder="easy number" min="1" />
+    <button class="btn primary" id="submitEasyNumberBtn">Choose</button>
   `;
-  updateChooseHint();
-  const input = document.getElementById("multiplierInput");
+  const g = state.guided;
+  setHint(`Pick a number so that number × ${g.divisor} is no more than ${g.currentRemainder.toLocaleString("en-US")} — the highlighted amount below.`);
+  const input = document.getElementById("easyNumberInput");
   input.focus();
-  const submit = () => handleMultiplierSubmit();
-  document.getElementById("submitMultiplierBtn").addEventListener("click", submit);
+  const submit = () => handleEasyNumberSubmit();
+  document.getElementById("submitEasyNumberBtn").addEventListener("click", submit);
   input.addEventListener("keydown", (e) => {
     if (e.key === "Enter") submit();
   });
 }
 
-function updateChooseHint() {
+function renderMultiplyControls() {
+  const controlRow = document.getElementById("controlRow");
   const g = state.guided;
-  setHint(`Pick a number so that number × ${g.divisor} is no more than ${g.currentRemainder.toLocaleString("en-US")} — the highlighted amount below.`);
+  controlRow.innerHTML = `
+    <label>${g.pendingMultiplier} × ${g.divisor} = <input type="number" id="productInput" class="num-input" /></label>
+    <button class="btn primary" id="submitProductBtn">Multiply</button>
+  `;
+  setHint(`Multiply ${g.pendingMultiplier} × ${g.divisor}.`);
+  const input = document.getElementById("productInput");
+  input.focus();
+  const submit = () => handleProductSubmit();
+  document.getElementById("submitProductBtn").addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+}
+
+function renderSubtractControls() {
+  const controlRow = document.getElementById("controlRow");
+  const g = state.guided;
+  controlRow.innerHTML = `
+    <label>${g.currentRemainder.toLocaleString("en-US")} &minus; ${g.pendingProduct.toLocaleString("en-US")} = <input type="number" id="diffInput" class="num-input" /></label>
+    <button class="btn primary" id="submitDiffBtn">Subtract</button>
+  `;
+  setHint(`Subtract ${g.pendingProduct.toLocaleString("en-US")} from ${g.currentRemainder.toLocaleString("en-US")}.`);
+  const input = document.getElementById("diffInput");
+  input.focus();
+  const submit = () => handleDiffSubmit();
+  document.getElementById("submitDiffBtn").addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
 }
 
 function renderFinalControls() {
@@ -364,9 +396,9 @@ function appendStep(product, newRemainder) {
   steps.appendChild(diffRow);
 }
 
-function handleMultiplierSubmit() {
+function handleEasyNumberSubmit() {
   const g = state.guided;
-  const input = document.getElementById("multiplierInput");
+  const input = document.getElementById("easyNumberInput");
   const val = parseInt(input.value, 10);
 
   if (!val || val <= 0) {
@@ -374,29 +406,59 @@ function handleMultiplierSubmit() {
     shakeCard();
     return;
   }
-  const product = val * g.divisor;
-  if (product > g.currentRemainder) {
-    showFeedback(`Too big! ${val} × ${g.divisor} = ${product}, which is more than ${g.currentRemainder}. Try smaller.`, false);
+  if (val * g.divisor > g.currentRemainder) {
+    showFeedback(`Too big! That number × ${g.divisor} would be more than ${g.currentRemainder}. Try smaller.`, false);
     shakeCard();
     return;
   }
 
-  const newRemainder = g.currentRemainder - product;
-  g.partials.push(val);
-  g.currentRemainder = newRemainder;
+  g.pendingMultiplier = val;
+  g.pendingProduct = val * g.divisor;
+  showFeedback("Good choice!", true);
+  addPoints(1);
+  renderMultiplyControls();
+}
 
-  appendStep(product, newRemainder);
+function handleProductSubmit() {
+  const g = state.guided;
+  const input = document.getElementById("productInput");
+  const val = parseInt(input.value, 10);
+
+  if (val !== g.pendingProduct) {
+    showFeedback("Not quite — try that multiplication again.", false);
+    shakeCard();
+    return;
+  }
+
+  showFeedback("Correct!", true);
+  addPoints(1);
+  renderSubtractControls();
+}
+
+function handleDiffSubmit() {
+  const g = state.guided;
+  const input = document.getElementById("diffInput");
+  const val = parseInt(input.value, 10);
+  const expected = g.currentRemainder - g.pendingProduct;
+
+  if (val !== expected) {
+    showFeedback("Not quite — try that subtraction again.", false);
+    shakeCard();
+    return;
+  }
+
+  g.partials.push(g.pendingMultiplier);
+  appendStep(g.pendingProduct, val);
   document.getElementById("ldQuotient").textContent = g.partials.join(" + ");
+  g.currentRemainder = val;
 
   showFeedback("Nice! That works.", true);
-  addPoints(2);
-  input.value = "";
+  addPoints(1);
 
-  if (newRemainder < g.divisor) {
+  if (val < g.divisor) {
     renderFinalControls();
   } else {
-    updateChooseHint();
-    input.focus();
+    renderChooseControls();
   }
 }
 
