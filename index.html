@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Long Division Quest</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <h1>🧮 Long Division Quest</h1>
+      <div class="stats" id="stats">
+        <div class="stat">
+          <span class="stat-label">Level</span>
+          <span class="stat-value" id="statLevel">1</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">XP</span>
+          <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Score</span>
+          <span class="stat-value" id="statScore">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Streak</span>
+          <span class="stat-value" id="statStreak">0 🔥</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Best</span>
+          <span class="stat-value" id="statBest">0</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="controls">
+      <div class="control-group" id="difficultyGroup">
+        <button class="pill" data-difficulty="normal">Normal</button>
+        <button class="pill" data-difficulty="hard">Hard</button>
+        <button class="pill" data-difficulty="ludicrous">Ludicrous</button>
+      </div>
+      <div class="control-group" id="modeGroup">
+        <button class="pill" data-mode="guided">Guided Mode</button>
+        <button class="pill" data-mode="free">Free Mode</button>
+      </div>
+    </section>
+
+    <main class="card" id="gameCard">
+      <div class="problem" id="problemDisplay"></div>
+      <div class="workarea" id="workArea"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="actions">
+        <button id="newProblemBtn" class="btn secondary">🔄 New Problem</button>
+      </div>
+    </main>
+
+    <section class="badges-panel">
+      <h2>🏅 Badges</h2>
+      <div class="badges" id="badgesRow"></div>
+    </section>
+  </div>
+
+  <div class="confetti-layer" id="confettiLayer"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
