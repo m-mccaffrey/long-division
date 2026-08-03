@@ -251,7 +251,7 @@ function newProblem() {
   state.problem = generateProblem(state.difficulty);
   document.getElementById("feedback").textContent = "";
   document.getElementById("feedback").className = "feedback";
-  renderProblemHeader();
+  renderBracket();
   if (state.mode === "guided") {
     startGuided();
   } else {
@@ -259,10 +259,17 @@ function newProblem() {
   }
 }
 
-function renderProblemHeader() {
+function renderBracket() {
   const { dividend, divisor } = state.problem;
-  document.getElementById("problemDisplay").innerHTML =
-    `${dividend.toLocaleString("en-US")} <span class="divisor-symbol">÷</span> ${divisor.toLocaleString("en-US")}`;
+  document.getElementById("ldPanel").style.setProperty("--ld-col-width", `${String(dividend).length + 1}ch`);
+  document.getElementById("ldDivisor").textContent = divisor;
+  document.getElementById("ldDividend").textContent = dividend.toLocaleString("en-US");
+  document.getElementById("ldQuotient").innerHTML = "&nbsp;";
+  document.getElementById("ldSteps").innerHTML = "";
+}
+
+function setHint(msg) {
+  document.getElementById("hintTip").textContent = msg;
 }
 
 function showFeedback(msg, good) {
@@ -293,79 +300,68 @@ function startGuided() {
     currentRemainder: dividend,
     divisor,
     partials: [],
-    phase: "choose", // choose -> reveal -> final
-    lastMultiplier: null,
-    lastProduct: null,
-    lastNewRemainder: null,
   };
-  renderGuided();
+  renderChooseControls();
 }
 
-function renderGuided() {
-  const work = document.getElementById("workArea");
+function renderChooseControls() {
+  const controlRow = document.getElementById("controlRow");
+  controlRow.innerHTML = `
+    <input type="number" id="multiplierInput" class="num-input" placeholder="easy number" min="1" />
+    <button class="btn primary" id="submitMultiplierBtn">Multiply &amp; Subtract</button>
+  `;
+  updateChooseHint();
+  const input = document.getElementById("multiplierInput");
+  input.focus();
+  const submit = () => handleMultiplierSubmit();
+  document.getElementById("submitMultiplierBtn").addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submit();
+  });
+}
+
+function updateChooseHint() {
   const g = state.guided;
-  const partialsExpr = g.partials.length ? g.partials.join(" + ") : "";
+  setHint(`Pick a number so that number × ${g.divisor} is no more than ${g.currentRemainder.toLocaleString("en-US")} — the highlighted amount below.`);
+}
 
-  let html = "";
-  html += `<div class="running-total">Running quotient: <span class="term">${partialsExpr || "0"}</span></div>`;
-
-  if (g.phase === "choose") {
-    html += `
-      <div class="hint-text">Working amount: <strong>${g.currentRemainder.toLocaleString("en-US")}</strong> ÷ <strong>${g.divisor}</strong>.
-      Pick an "easy" number so that <em>easy number &times; ${g.divisor}</em> is less than or equal to ${g.currentRemainder.toLocaleString("en-US")}.</div>
-      <div class="step-row">
-        <input type="number" id="multiplierInput" class="num-input" placeholder="easy number" min="1" />
-        <button class="btn primary" id="submitMultiplierBtn">Multiply &amp; Subtract</button>
-      </div>
-    `;
-  } else if (g.phase === "reveal") {
-    html += `
-      <div class="hint-text">
-        ${g.lastMultiplier} &times; ${g.divisor} = <strong>${g.lastProduct.toLocaleString("en-US")}</strong><br/>
-        ${g.beforeRemainder.toLocaleString("en-US")} &minus; ${g.lastProduct.toLocaleString("en-US")} = <strong>${g.lastNewRemainder.toLocaleString("en-US")}</strong>
-      </div>
-      <div class="step-row">
-        <button class="btn primary" id="continueBtn">Continue</button>
-      </div>
-    `;
-  } else if (g.phase === "final") {
-    html += `
-      <div class="hint-text">Remainder (${g.currentRemainder.toLocaleString("en-US")}) is smaller than the divisor (${g.divisor}) &mdash; time to finish up!</div>
-      <div class="step-row">
-        <label>Final quotient (sum): <input type="number" id="finalQuotientInput" class="num-input" /></label>
-        <label>Remainder: <input type="number" id="finalRemainderInput" class="num-input" /></label>
-        <button class="btn primary" id="submitFinalBtn">Check Answer</button>
-      </div>
-    `;
-  }
-
-  work.innerHTML = html;
-
-  if (g.phase === "choose") {
-    const input = document.getElementById("multiplierInput");
-    input.focus();
-    const submit = () => handleMultiplierSubmit();
-    document.getElementById("submitMultiplierBtn").addEventListener("click", submit);
-    input.addEventListener("keydown", (e) => {
+function renderFinalControls() {
+  const controlRow = document.getElementById("controlRow");
+  controlRow.innerHTML = `
+    <label>Quotient: <input type="number" id="finalQuotientInput" class="num-input" /></label>
+    <label>Remainder: <input type="number" id="finalRemainderInput" class="num-input" /></label>
+    <button class="btn primary" id="submitFinalBtn">Check Answer</button>
+  `;
+  setHint("The highlighted amount is smaller than the divisor. Add up your numbers above the bracket for the quotient, and enter it with the remainder.");
+  const qInput = document.getElementById("finalQuotientInput");
+  const rInput = document.getElementById("finalRemainderInput");
+  qInput.focus();
+  const submit = () => handleFinalSubmit();
+  document.getElementById("submitFinalBtn").addEventListener("click", submit);
+  [qInput, rInput].forEach((inp) =>
+    inp.addEventListener("keydown", (e) => {
       if (e.key === "Enter") submit();
-    });
-  } else if (g.phase === "reveal") {
-    document.getElementById("continueBtn").addEventListener("click", () => {
-      g.phase = g.currentRemainder < g.divisor ? "final" : "choose";
-      renderGuided();
-    });
-  } else if (g.phase === "final") {
-    const qInput = document.getElementById("finalQuotientInput");
-    const rInput = document.getElementById("finalRemainderInput");
-    qInput.focus();
-    const submit = () => handleFinalSubmit();
-    document.getElementById("submitFinalBtn").addEventListener("click", submit);
-    [qInput, rInput].forEach((inp) =>
-      inp.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") submit();
-      })
-    );
-  }
+    })
+  );
+}
+
+function appendStep(product, newRemainder) {
+  const steps = document.getElementById("ldSteps");
+  steps.querySelectorAll(".ld-diff.ld-current").forEach((el) => el.classList.remove("ld-current"));
+
+  const productRow = document.createElement("div");
+  productRow.className = "ld-step-row ld-product";
+  productRow.textContent = `− ${product.toLocaleString("en-US")}`;
+  steps.appendChild(productRow);
+
+  const rule = document.createElement("div");
+  rule.className = "ld-rule";
+  steps.appendChild(rule);
+
+  const diffRow = document.createElement("div");
+  diffRow.className = "ld-step-row ld-diff ld-current";
+  diffRow.textContent = newRemainder.toLocaleString("en-US");
+  steps.appendChild(diffRow);
 }
 
 function handleMultiplierSubmit() {
@@ -385,19 +381,23 @@ function handleMultiplierSubmit() {
     return;
   }
 
-  const before = g.currentRemainder;
-  const newRemainder = before - product;
+  const newRemainder = g.currentRemainder - product;
   g.partials.push(val);
-  g.beforeRemainder = before;
-  g.lastMultiplier = val;
-  g.lastProduct = product;
-  g.lastNewRemainder = newRemainder;
   g.currentRemainder = newRemainder;
-  g.phase = "reveal";
+
+  appendStep(product, newRemainder);
+  document.getElementById("ldQuotient").textContent = g.partials.join(" + ");
 
   showFeedback("Nice! That works.", true);
   addPoints(2);
-  renderGuided();
+  input.value = "";
+
+  if (newRemainder < g.divisor) {
+    renderFinalControls();
+  } else {
+    updateChooseHint();
+    input.focus();
+  }
 }
 
 function handleFinalSubmit() {
@@ -424,15 +424,13 @@ function handleFinalSubmit() {
 // ---------- Free mode ----------
 
 function startFree() {
-  const work = document.getElementById("workArea");
-  work.innerHTML = `
-    <div class="hint-text">Work it out on paper (or in your head), then enter your answer.</div>
-    <div class="step-row">
-      <label>Quotient: <input type="number" id="freeQuotientInput" class="num-input" /></label>
-      <label>Remainder: <input type="number" id="freeRemainderInput" class="num-input" /></label>
-      <button class="btn primary" id="submitFreeBtn">Check Answer</button>
-    </div>
+  const controlRow = document.getElementById("controlRow");
+  controlRow.innerHTML = `
+    <label>Quotient: <input type="number" id="freeQuotientInput" class="num-input" /></label>
+    <label>Remainder: <input type="number" id="freeRemainderInput" class="num-input" /></label>
+    <button class="btn primary" id="submitFreeBtn">Check Answer</button>
   `;
+  setHint("Work it out on paper (or in your head), then enter your answer.");
   const qInput = document.getElementById("freeQuotientInput");
   const rInput = document.getElementById("freeRemainderInput");
   qInput.focus();
