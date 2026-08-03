@@ -264,7 +264,7 @@ function renderBracket() {
   document.getElementById("ldPanel").style.setProperty("--ld-col-width", `${String(dividend).length + 1}ch`);
   document.getElementById("ldDivisor").textContent = divisor;
   document.getElementById("ldDividend").textContent = dividend.toLocaleString("en-US");
-  document.getElementById("ldQuotient").innerHTML = "&nbsp;";
+  document.getElementById("ldQuotientStack").innerHTML = '<div class="ld-quotient-term">&nbsp;</div>';
   document.getElementById("ldSteps").innerHTML = "";
 }
 
@@ -377,6 +377,27 @@ function renderFinalControls() {
   );
 }
 
+function updateQuotientStack(partials) {
+  const stack = document.getElementById("ldQuotientStack");
+  stack.innerHTML = "";
+  partials.forEach((p, i) => {
+    const row = document.createElement("div");
+    row.className = "ld-quotient-term";
+    row.textContent = (i === 0 ? "" : "+ ") + p;
+    stack.appendChild(row);
+  });
+  if (partials.length > 1) {
+    const rule = document.createElement("div");
+    rule.className = "ld-quotient-rule";
+    stack.appendChild(rule);
+
+    const total = document.createElement("div");
+    total.className = "ld-quotient-total";
+    total.textContent = partials.reduce((a, b) => a + b, 0).toLocaleString("en-US");
+    stack.appendChild(total);
+  }
+}
+
 function appendStep(product, newRemainder) {
   const steps = document.getElementById("ldSteps");
   steps.querySelectorAll(".ld-diff.ld-current").forEach((el) => el.classList.remove("ld-current"));
@@ -449,7 +470,7 @@ function handleDiffSubmit() {
 
   g.partials.push(g.pendingMultiplier);
   appendStep(g.pendingProduct, val);
-  document.getElementById("ldQuotient").textContent = g.partials.join(" + ");
+  updateQuotientStack(g.partials);
   g.currentRemainder = val;
 
   showFeedback("Nice! That works.", true);
