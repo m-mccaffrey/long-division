@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Long Division Quest</title>
-<link rel="stylesheet" href="style.css?v=2" />
+<link rel="stylesheet" href="style.css?v=3" />
 </head>
 <body>
   <div class="app">
@@ -47,25 +47,32 @@
     </section>
 
     <main class="card" id="gameCard">
-      <div class="ld-scroll">
-        <div class="ld-panel" id="ldPanel">
-          <div class="ld-quotient" id="ldQuotient">&nbsp;</div>
-          <div class="ld-main-row">
-            <span class="ld-divisor" id="ldDivisor"></span>
-            <span class="ld-bracket"><span class="ld-dividend" id="ldDividend"></span></span>
+      <div class="game-layout">
+        <div class="game-left">
+          <div class="control-zone">
+            <div class="hint-tip" id="hintTip"></div>
+            <div class="step-row" id="controlRow"></div>
           </div>
-          <div class="ld-steps" id="ldSteps"></div>
+          <div class="feedback" id="feedback"></div>
+          <div class="actions">
+            <button id="newProblemBtn" class="btn secondary">🔄 New Problem</button>
+          </div>
         </div>
-      </div>
 
-      <div class="control-zone">
-        <div class="hint-tip" id="hintTip"></div>
-        <div class="step-row" id="controlRow"></div>
-      </div>
-
-      <div class="feedback" id="feedback"></div>
-      <div class="actions">
-        <button id="newProblemBtn" class="btn secondary">🔄 New Problem</button>
+        <div class="game-right">
+          <div class="ld-scroll">
+            <div class="ld-panel" id="ldPanel">
+              <div class="ld-quotient-stack" id="ldQuotientStack">
+                <div class="ld-quotient-term">&nbsp;</div>
+              </div>
+              <div class="ld-main-row">
+                <span class="ld-divisor" id="ldDivisor"></span>
+                <span class="ld-bracket"><span class="ld-dividend" id="ldDividend"></span></span>
+              </div>
+              <div class="ld-steps" id="ldSteps"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -77,6 +84,6 @@
 
   <div class="confetti-layer" id="confettiLayer"></div>
 
-  <script src="script.js?v=2"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>
