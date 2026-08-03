@@ -377,7 +377,7 @@ function renderFinalControls() {
   );
 }
 
-function updateQuotientStack(partials) {
+function updateQuotientStack(partials, pendingVal) {
   const stack = document.getElementById("ldQuotientStack");
   stack.innerHTML = "";
   partials.forEach((p, i) => {
@@ -386,6 +386,12 @@ function updateQuotientStack(partials) {
     row.textContent = (i === 0 ? "" : "+ ") + p;
     stack.appendChild(row);
   });
+  if (pendingVal !== undefined) {
+    const row = document.createElement("div");
+    row.className = "ld-quotient-term ld-pending";
+    row.textContent = (partials.length === 0 ? "" : "+ ") + pendingVal;
+    stack.appendChild(row);
+  }
   if (partials.length > 1) {
     const rule = document.createElement("div");
     rule.className = "ld-quotient-rule";
@@ -398,14 +404,20 @@ function updateQuotientStack(partials) {
   }
 }
 
-function appendStep(product, newRemainder) {
+function appendProductRow(product) {
+  const steps = document.getElementById("ldSteps");
+  const productRow = document.createElement("div");
+  productRow.className = "ld-step-row ld-product";
+  productRow.id = "pendingProductRow";
+  productRow.textContent = `− ${product.toLocaleString("en-US")}`;
+  steps.appendChild(productRow);
+}
+
+function appendDiffRow(newRemainder) {
   const steps = document.getElementById("ldSteps");
   steps.querySelectorAll(".ld-diff.ld-current").forEach((el) => el.classList.remove("ld-current"));
 
-  const productRow = document.createElement("div");
-  productRow.className = "ld-step-row ld-product";
-  productRow.textContent = `− ${product.toLocaleString("en-US")}`;
-  steps.appendChild(productRow);
+  document.getElementById("pendingProductRow")?.removeAttribute("id");
 
   const rule = document.createElement("div");
   rule.className = "ld-rule";
@@ -435,6 +447,8 @@ function handleEasyNumberSubmit() {
 
   g.pendingMultiplier = val;
   g.pendingProduct = val * g.divisor;
+  updateQuotientStack(g.partials, val);
+
   showFeedback("Good choice!", true);
   addPoints(1);
   renderMultiplyControls();
@@ -450,6 +464,8 @@ function handleProductSubmit() {
     shakeCard();
     return;
   }
+
+  appendProductRow(g.pendingProduct);
 
   showFeedback("Correct!", true);
   addPoints(1);
@@ -469,7 +485,7 @@ function handleDiffSubmit() {
   }
 
   g.partials.push(g.pendingMultiplier);
-  appendStep(g.pendingProduct, val);
+  appendDiffRow(val);
   updateQuotientStack(g.partials);
   g.currentRemainder = val;
 
