@@ -170,24 +170,24 @@ body {
 }
 
 .ld-panel {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: max-content max-content;
+  align-items: center;
   font-family: "Courier New", monospace;
   font-size: 1.4rem;
   line-height: 1.4;
   padding: 4px 6px;
 }
 
-.ld-quotient-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  margin-bottom: 4px;
+.ld-quotient-stack,
+.ld-main-row,
+.ld-steps {
+  display: contents;
 }
 
 .ld-quotient-term {
-  min-width: var(--ld-col-width, 3ch);
+  grid-column: 2;
+  justify-self: end;
   text-align: right;
   color: var(--accent);
   font-weight: 700;
@@ -201,30 +201,33 @@ body {
 }
 
 .ld-quotient-rule {
+  grid-column: 2;
+  justify-self: stretch;
   border-top: 2px solid var(--accent);
-  min-width: var(--ld-col-width, 3ch);
   margin: 2px 0;
 }
 
 .ld-quotient-total {
-  min-width: var(--ld-col-width, 3ch);
+  grid-column: 2;
+  justify-self: end;
   text-align: right;
   color: var(--accent);
   font-weight: 700;
   white-space: nowrap;
 }
 
-.ld-main-row {
-  display: flex;
-  align-items: flex-start;
-}
-
 .ld-divisor {
+  grid-column: 1;
+  justify-self: end;
+  align-self: start;
   padding: 2px 10px 2px 0;
   font-weight: 700;
 }
 
 .ld-bracket {
+  grid-column: 2;
+  justify-self: end;
+  align-self: start;
   border-top: 3px solid var(--text);
   border-left: 3px solid var(--text);
   border-radius: 4px 0 0 0;
@@ -233,20 +236,13 @@ body {
 }
 
 .ld-dividend {
-  min-width: var(--ld-col-width, 3ch);
   display: inline-block;
   text-align: right;
 }
 
-.ld-steps {
-  margin-left: calc(1em + 12px + 10px);
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-}
-
 .ld-step-row {
-  min-width: var(--ld-col-width, 3ch);
+  grid-column: 2;
+  justify-self: end;
   text-align: right;
   padding: 1px 10px;
   white-space: nowrap;
@@ -266,8 +262,9 @@ body {
 }
 
 .ld-rule {
+  grid-column: 2;
+  justify-self: stretch;
   border-top: 2px solid var(--text);
-  min-width: var(--ld-col-width, 3ch);
   margin: 0 10px;
 }
 
