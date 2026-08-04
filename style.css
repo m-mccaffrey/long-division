@@ -35,7 +35,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
 }
 
 .topbar h1 {
@@ -43,6 +43,21 @@ body {
   font-size: 1.6rem;
   margin: 0;
   text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.cross-link {
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+.cross-link a {
+  color: rgba(255,255,255,0.85);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.cross-link a:hover {
+  text-decoration: underline;
 }
 
 .stats {
