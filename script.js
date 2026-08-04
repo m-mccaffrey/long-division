@@ -75,6 +75,7 @@ function saveStats() {
 }
 
 let stats = loadStats();
+let pendingAdvanceTimeout = null;
 
 // ---------- App state ----------
 
@@ -248,6 +249,10 @@ function updateSelectorUI() {
 // ---------- Problem lifecycle ----------
 
 function newProblem() {
+  if (pendingAdvanceTimeout) {
+    clearTimeout(pendingAdvanceTimeout);
+    pendingAdvanceTimeout = null;
+  }
   state.problem = generateProblem(state.difficulty);
   document.getElementById("feedback").textContent = "";
   document.getElementById("feedback").className = "feedback";
@@ -513,12 +518,12 @@ function handleFinalSubmit() {
     addPoints(DIFFICULTY[state.difficulty].points);
     registerSolve();
     if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
-    setTimeout(newProblem, 1600);
+    pendingAdvanceTimeout = setTimeout(newProblem, 1600);
   } else {
     showFeedback(`Not quite. Correct answer: ${quotient} remainder ${remainder}.`, false);
     shakeCard();
     registerMiss();
-    setTimeout(newProblem, 2200);
+    pendingAdvanceTimeout = setTimeout(newProblem, 2200);
   }
 }
 
@@ -555,12 +560,12 @@ function handleFreeSubmit() {
     addPoints(Math.round(DIFFICULTY[state.difficulty].points * 1.5));
     registerSolve();
     if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
-    setTimeout(newProblem, 1600);
+    pendingAdvanceTimeout = setTimeout(newProblem, 1600);
   } else {
     showFeedback(`Not quite. Correct answer: ${quotient} remainder ${remainder}.`, false);
     shakeCard();
     registerMiss();
-    setTimeout(newProblem, 2200);
+    pendingAdvanceTimeout = setTimeout(newProblem, 2200);
   }
 }
 
