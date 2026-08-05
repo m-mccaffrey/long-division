@@ -193,7 +193,6 @@ body {
   padding: 4px 6px;
 }
 
-.as-carry-row,
 .as-top-row,
 .as-bottom-row,
 .as-answer-row {
@@ -207,13 +206,6 @@ body {
   padding: 2px 6px;
 }
 
-.as-cell.as-carry {
-  font-size: 0.75rem;
-  color: var(--accent2);
-  font-weight: 700;
-  min-height: 1.2em;
-}
-
 .as-cell.as-op {
   justify-self: start;
   font-weight: 700;
@@ -222,11 +214,6 @@ body {
 
 .as-cell.as-top-digit {
   color: var(--text);
-}
-
-.as-cell.as-top-digit.as-changed {
-  color: var(--bad);
-  transition: color 0.2s;
 }
 
 .as-cell.as-bottom-digit {
