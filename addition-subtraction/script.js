@@ -29,7 +29,6 @@ const BADGE_DEFS = [
   { id: "three_digit_solve", label: "Three-Digit Champ", check: (s) => s.threeDigitSolved >= 1 },
   { id: "carry_solve", label: "Carry Captain", check: (s) => s.carrySolved >= 1 },
   { id: "borrow_solve", label: "Borrow Boss", check: (s) => s.borrowSolved >= 1 },
-  { id: "free_solve", label: "Free Thinker", check: (s) => s.freeSolved >= 1 },
 ];
 
 const STORAGE_KEY = "additionSubtractionQuestState";
@@ -47,7 +46,6 @@ function loadStats() {
     threeDigitSolved: 0,
     carrySolved: 0,
     borrowSolved: 0,
-    freeSolved: 0,
     earnedBadges: [],
   };
   try {
@@ -71,9 +69,7 @@ let pendingAdvanceTimeout = null;
 let state = {
   difficulty: "twoDigit",
   operation: "mixed",
-  mode: "guided",
   problem: null, // {a, b, op, answer, length, regroup}
-  guided: null,
 };
 
 // ---------- Helpers ----------
@@ -105,7 +101,6 @@ function registerSolve() {
   if (state.difficulty === "threeDigit") stats.threeDigitSolved += 1;
   if (p.op === "add" && p.regroup) stats.carrySolved += 1;
   if (p.op === "sub" && p.regroup) stats.borrowSolved += 1;
-  if (state.mode === "free") stats.freeSolved += 1;
   checkBadges();
   saveStats();
   renderStats();
@@ -323,13 +318,6 @@ function setupSelectors() {
       newProblem();
     });
   });
-  document.querySelectorAll("#modeGroup .pill").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      state.mode = btn.dataset.mode;
-      updateSelectorUI();
-      newProblem();
-    });
-  });
   document.getElementById("newProblemBtn").addEventListener("click", newProblem);
 }
 
@@ -339,9 +327,6 @@ function updateSelectorUI() {
   });
   document.querySelectorAll("#operationGroup .pill").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.operation === state.operation);
-  });
-  document.querySelectorAll("#modeGroup .pill").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.mode === state.mode);
   });
 }
 
@@ -356,36 +341,22 @@ function newProblem() {
   document.getElementById("feedback").textContent = "";
   document.getElementById("feedback").className = "feedback";
   renderPanel(state.problem);
-  if (state.mode === "guided") {
-    startGuided();
-  } else {
-    startFree();
-  }
+  startFree();
 }
 
 function renderPanel(problem) {
   const totalCols = problem.length + 2;
   document.getElementById("asPanel").style.gridTemplateColumns = `repeat(${totalCols}, max-content)`;
 
-  const carryRow = document.getElementById("asCarryRow");
   const topRow = document.getElementById("asTopRow");
   const bottomRow = document.getElementById("asBottomRow");
   const answerRow = document.getElementById("asAnswerRow");
-  carryRow.innerHTML = "";
   topRow.innerHTML = "";
   bottomRow.innerHTML = "";
   answerRow.innerHTML = "";
 
   const topDigits = digitsOf(problem.a, problem.length);
   const bottomDigits = digitsOf(problem.b, problem.length);
-
-  for (let c = 0; c < totalCols; c++) {
-    const cell = document.createElement("div");
-    cell.className = "as-cell as-carry";
-    cell.style.gridColumn = String(c + 1);
-    cell.id = `asCarry_${c}`;
-    carryRow.appendChild(cell);
-  }
 
   const topBlank0 = document.createElement("div");
   topBlank0.className = "as-cell";
@@ -463,11 +434,6 @@ function popCard() {
   card.classList.add("pop");
 }
 
-function placeNameForIndex(i, length) {
-  const names = ["ones", "tens", "hundreds"];
-  return names[length - 1 - i] || `10^${length - 1 - i}`;
-}
-
 function setAnswerDigit(i, val) {
   const el = document.getElementById(`asAnswer_${i}`);
   el.textContent = val;
@@ -477,20 +443,6 @@ function setAnswerDigit(i, val) {
 function setOverflowDigit(val) {
   const el = document.getElementById("asAnswerOverflow");
   el.textContent = val;
-}
-
-function setCarryMarker(colIdx, val) {
-  const el = document.getElementById(`asCarry_${colIdx + 2}`);
-  if (el) el.textContent = val;
-}
-
-function updateTopDigitDisplay(j) {
-  const el = document.getElementById(`asTop_${j}`);
-  if (!el) return;
-  el.textContent = state.guided.topDigits[j];
-  el.classList.remove("as-changed");
-  void el.offsetWidth;
-  el.classList.add("as-changed");
 }
 
 function revealFullAnswer(answer, length) {
@@ -503,180 +455,13 @@ function revealFullAnswer(answer, length) {
   }
 }
 
-// ---------- Guided mode ----------
-
-function startGuided() {
-  const p = state.problem;
-  state.guided = {
-    topDigits: digitsOf(p.a, p.length),
-    bottomDigits: digitsOf(p.b, p.length),
-    colIndex: p.length - 1,
-    carryIn: 0,
-  };
-  advanceColumn();
-}
-
-function performBorrowCascade(j) {
-  const g = state.guided;
-  if (g.topDigits[j] === 0) {
-    performBorrowCascade(j - 1);
-    g.topDigits[j] = 10;
-  }
-  g.topDigits[j] -= 1;
-  updateTopDigitDisplay(j);
-}
-
-function advanceColumn() {
-  const g = state.guided;
-  const p = state.problem;
-  if (g.colIndex < 0) {
-    renderFinalControls();
-    return;
-  }
-  if (p.op === "add") {
-    renderAddColumnControls();
-  } else {
-    const i = g.colIndex;
-    if (g.topDigits[i] < g.bottomDigits[i]) {
-      performBorrowCascade(i - 1);
-      g.topDigits[i] += 10;
-      showFeedback("Borrowed 1 ten from the next column!", true);
-    }
-    renderSubColumnControls();
-  }
-}
-
-function wireColInput(handler) {
-  const input = document.getElementById("colInput");
-  input.focus();
-  const submit = () => handler();
-  document.getElementById("colSubmitBtn").addEventListener("click", submit);
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") submit();
-  });
-}
-
-function renderAddColumnControls() {
-  const g = state.guided;
-  const i = g.colIndex;
-  const controlRow = document.getElementById("controlRow");
-  const carryText = g.carryIn > 0 ? ` + ${g.carryIn}` : "";
-  controlRow.innerHTML = `
-    <label>${g.topDigits[i]} + ${g.bottomDigits[i]}${carryText} = <input type="number" id="colInput" class="num-input" /></label>
-    <button class="btn primary" id="colSubmitBtn">Add</button>
-  `;
-  setHint(`Add the ${placeNameForIndex(i, state.problem.length)} column${g.carryIn > 0 ? " — don't forget the carried 1!" : "."}`);
-  wireColInput(handleAddColumnSubmit);
-}
-
-function handleAddColumnSubmit() {
-  const g = state.guided;
-  const i = g.colIndex;
-  const val = parseInt(document.getElementById("colInput").value, 10);
-  const expected = g.topDigits[i] + g.bottomDigits[i] + g.carryIn;
-
-  if (isNaN(val) || val !== expected) {
-    showFeedback("Not quite — try that addition again.", false);
-    shakeCard();
-    return;
-  }
-
-  const resultDigit = expected % 10;
-  const carryOut = Math.floor(expected / 10);
-  setAnswerDigit(i, resultDigit);
-  showFeedback("Correct!", true);
-  addPoints(1);
-
-  if (carryOut > 0 && i > 0) {
-    setCarryMarker(i - 1, carryOut);
-    g.carryIn = carryOut;
-  } else if (carryOut > 0) {
-    setOverflowDigit(carryOut);
-    g.carryIn = 0;
-  } else {
-    g.carryIn = 0;
-  }
-
-  g.colIndex -= 1;
-  advanceColumn();
-}
-
-function renderSubColumnControls() {
-  const g = state.guided;
-  const i = g.colIndex;
-  const controlRow = document.getElementById("controlRow");
-  controlRow.innerHTML = `
-    <label>${g.topDigits[i]} &minus; ${g.bottomDigits[i]} = <input type="number" id="colInput" class="num-input" /></label>
-    <button class="btn primary" id="colSubmitBtn">Subtract</button>
-  `;
-  setHint(`Subtract the ${placeNameForIndex(i, state.problem.length)} column.`);
-  wireColInput(handleSubColumnSubmit);
-}
-
-function handleSubColumnSubmit() {
-  const g = state.guided;
-  const i = g.colIndex;
-  const val = parseInt(document.getElementById("colInput").value, 10);
-  const expected = g.topDigits[i] - g.bottomDigits[i];
-
-  if (isNaN(val) || val !== expected) {
-    showFeedback("Not quite — try that subtraction again.", false);
-    shakeCard();
-    return;
-  }
-
-  setAnswerDigit(i, expected);
-  showFeedback("Correct!", true);
-  addPoints(1);
-  g.colIndex -= 1;
-  advanceColumn();
-}
-
-function renderFinalControls() {
-  const controlRow = document.getElementById("controlRow");
-  controlRow.innerHTML = `
-    <label>Full answer: <input type="number" id="finalAnswerInput" class="num-input" /></label>
-    <button class="btn primary" id="submitFinalBtn">Check Answer</button>
-  `;
-  setHint("Read the digits you built, left to right, and type the whole answer.");
-  const input = document.getElementById("finalAnswerInput");
-  input.focus();
-  const submit = () => handleFinalSubmit();
-  document.getElementById("submitFinalBtn").addEventListener("click", submit);
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") submit();
-  });
-}
-
-function handleFinalSubmit() {
-  const p = state.problem;
-  const val = parseInt(document.getElementById("finalAnswerInput").value, 10);
-  const opSymbol = p.op === "add" ? "+" : "−";
-
-  if (val === p.answer) {
-    showFeedback(`Correct! ${p.a} ${opSymbol} ${p.b} = ${p.answer}.`, true);
-    popCard();
-    addPoints(DIFFICULTY[state.difficulty].points);
-    registerSolve();
-    if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
-    pendingAdvanceTimeout = setTimeout(newProblem, 1600);
-  } else {
-    showFeedback(`Not quite. Correct answer: ${p.answer}.`, false);
-    shakeCard();
-    registerMiss();
-    pendingAdvanceTimeout = setTimeout(newProblem, 2200);
-  }
-}
-
-// ---------- Free mode ----------
-
 function startFree() {
   const controlRow = document.getElementById("controlRow");
   controlRow.innerHTML = `
     <label>Answer: <input type="number" id="freeAnswerInput" class="num-input" /></label>
     <button class="btn primary" id="submitFreeBtn">Check Answer</button>
   `;
-  setHint("Work it out on paper (or in your head), then enter your answer.");
+  setHint("Figure it out, then type the answer!");
   const input = document.getElementById("freeAnswerInput");
   input.focus();
   const submit = () => handleFreeSubmit();
@@ -695,7 +480,7 @@ function handleFreeSubmit() {
     showFeedback(`Correct! ${p.a} ${opSymbol} ${p.b} = ${p.answer}.`, true);
     revealFullAnswer(p.answer, p.length);
     popCard();
-    addPoints(Math.round(DIFFICULTY[state.difficulty].points * 1.5));
+    addPoints(DIFFICULTY[state.difficulty].points);
     registerSolve();
     if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
     pendingAdvanceTimeout = setTimeout(newProblem, 1600);
