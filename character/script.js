@@ -74,6 +74,40 @@ const SKILLS = [
       { id: "meeting_solve", label: "Scheduling Pro" },
     ],
   },
+  {
+    key: "multiplication1",
+    storageKey: "multiplication1QuestState",
+    name: "Multiplication 1",
+    icon: "✖️",
+    color: "#4d7c0f",
+    xpBase: 130,
+    url: "../multiplication1/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "missing_factor_solve", label: "Fact Finder" },
+      { id: "word_solve", label: "Story Solver" },
+    ],
+  },
+  {
+    key: "multiplication2",
+    storageKey: "multiplication2QuestState",
+    name: "Multiplication 2",
+    icon: "🧩",
+    color: "#6d28d9",
+    xpBase: 175,
+    url: "../multiplication2/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "decimal_solve", label: "Decimal Dynamo" },
+      { id: "mixed_solve", label: "Fraction Master" },
+    ],
+  },
 ];
 
 const RANKS = [

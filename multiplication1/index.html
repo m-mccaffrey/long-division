@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Add &amp; Subtract Quest</title>
-<link rel="stylesheet" href="style.css?v=4" />
+<title>Multiplication Quest 1</title>
+<link rel="stylesheet" href="style.css?v=1" />
 </head>
 <body>
   <div class="app">
     <header class="topbar">
-      <h1>➕➖ Add &amp; Subtract Quest</h1>
+      <h1>✖️ Multiplication Quest 1</h1>
       <div class="stats" id="stats">
         <div class="stat">
           <span class="stat-label">Level</span>
@@ -37,21 +37,21 @@
     <p class="cross-link">
       <a href="../character/index.html">🧑 My Character</a> ·
       <a href="../index.html">🔗 Long Division Quest</a> ·
+      <a href="../addition-subtraction/index.html">🔗 Add &amp; Subtract Quest</a> ·
       <a href="../datetime1/index.html">🔗 Time &amp; Calendar Quest 1</a> ·
       <a href="../datetime2/index.html">🔗 Time &amp; Calendar Quest 2</a> ·
-      <a href="../multiplication1/index.html">🔗 Multiplication Quest 1</a> ·
       <a href="../multiplication2/index.html">🔗 Multiplication Quest 2</a>
     </p>
 
     <section class="controls">
       <div class="control-group" id="difficultyGroup">
-        <button class="pill" data-difficulty="twoDigit">Two-Digit</button>
-        <button class="pill" data-difficulty="threeDigit">Three-Digit</button>
+        <button class="pill" data-difficulty="easy">Easy</button>
+        <button class="pill" data-difficulty="medium">Medium</button>
+        <button class="pill" data-difficulty="hard">Hard</button>
       </div>
-      <div class="control-group" id="operationGroup">
-        <button class="pill" data-operation="add">Addition</button>
-        <button class="pill" data-operation="sub">Subtraction</button>
-        <button class="pill" data-operation="mixed">Mixed</button>
+      <div class="control-group" id="modeGroup">
+        <button class="pill" data-mode="guided">Guided Mode</button>
+        <button class="pill" data-mode="free">Free Mode</button>
       </div>
     </section>
 
@@ -69,14 +69,7 @@
         </div>
 
         <div class="game-right">
-          <div class="as-scroll">
-            <div class="as-panel" id="asPanel">
-              <div class="as-top-row" id="asTopRow"></div>
-              <div class="as-bottom-row" id="asBottomRow"></div>
-              <div class="as-rule" id="asRule"></div>
-              <div class="as-answer-row" id="asAnswerRow"></div>
-            </div>
-          </div>
+          <div class="visual-area" id="visualArea"></div>
         </div>
       </div>
     </main>
@@ -89,6 +82,6 @@
 
   <div class="confetti-layer" id="confettiLayer"></div>
 
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=1"></script>
 </body>
 </html>
