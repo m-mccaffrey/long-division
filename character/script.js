@@ -176,6 +176,40 @@ const SKILLS = [
       { id: "mixed_solve", label: "Tape Measure Pro" },
     ],
   },
+  {
+    key: "angles1",
+    storageKey: "angles1QuestState",
+    name: "Angles 1",
+    icon: "🔺",
+    color: "#c2410c",
+    xpBase: 130,
+    url: "../angles1/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "type_solve", label: "Angle Spotter" },
+      { id: "turn_solve", label: "Turn Master" },
+    ],
+  },
+  {
+    key: "angles2",
+    storageKey: "angles2QuestState",
+    name: "Angles 2",
+    icon: "🧭",
+    color: "#065f46",
+    xpBase: 175,
+    url: "../angles2/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "measure_solve", label: "Protractor Pro" },
+      { id: "sum_solve", label: "Angle Adder" },
+    ],
+  },
 ];
 
 const RANKS = [
