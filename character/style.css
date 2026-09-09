@@ -1,0 +1,258 @@
+:root {
+  --bg1: #451a03;
+  --bg2: #7c2d12;
+  --card-bg: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --accent: #b45309;
+  --accent2: #facc15;
+  --pill-bg: #fef3c7;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: linear-gradient(135deg, var(--bg1), var(--bg2) 55%, #92400e);
+  background-attachment: fixed;
+  color: var(--text);
+}
+
+.app {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+.cross-link {
+  text-align: center;
+  margin: 0 0 20px;
+}
+
+.cross-link a {
+  color: rgba(255,255,255,0.85);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.cross-link a:hover {
+  text-decoration: underline;
+}
+
+.char-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar-circle {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: var(--pill-bg);
+  border: 4px solid var(--accent2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+.avatar-placeholder {
+  font-size: 3rem;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-btn {
+  font-size: 0.75rem;
+  padding: 6px 12px;
+}
+
+.char-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255,255,255,0.4);
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px 8px;
+  width: 260px;
+  max-width: 100%;
+}
+
+.name-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+.name-input:focus {
+  outline: none;
+  border-bottom-color: var(--accent2);
+}
+
+.rank-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent2);
+  text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.rank-sub {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.75);
+}
+
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.skill-card {
+  background: var(--card-bg);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 6px solid var(--skill-color, var(--accent));
+}
+
+.skill-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skill-icon {
+  font-size: 1.8rem;
+}
+
+.skill-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  flex: 1;
+}
+
+.skill-level-badge {
+  background: var(--skill-color, var(--accent));
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.skill-xp-bar {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.skill-xp-fill {
+  height: 100%;
+  background: var(--skill-color, var(--accent));
+  transition: width 0.4s ease;
+}
+
+.skill-xp-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.skill-stats-row {
+  display: flex;
+  gap: 14px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.skill-stats-row b {
+  color: var(--text);
+}
+
+.skill-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.skill-badge {
+  font-size: 0.68rem;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.skill-badge.earned {
+  background: var(--pill-bg);
+  color: #92400e;
+}
+
+.skill-play-link {
+  margin-top: 6px;
+  text-align: center;
+  text-decoration: none;
+  background: var(--skill-color, var(--accent));
+  color: #fff;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+
+.btn {
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn.secondary {
+  background: var(--pill-bg);
+  color: var(--accent);
+}
+
+@media (max-width: 560px) {
+  .char-header { flex-direction: column; }
+  .name-input { font-size: 1.3rem; }
+}

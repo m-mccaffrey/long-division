@@ -1,17 +1,12 @@
 // ---------- Config ----------
 
 const DIFFICULTY = {
-  easy: { label: "Easy", points: 10 },
+  easy: { label: "Easy", points: 6 },
   medium: { label: "Medium", points: 20 },
-  hard: { label: "Hard", points: 30 },
+  hard: { label: "Hard", points: 45 },
 };
 
 const BADGE_DEFS = [
-  { id: "first_solve", label: "First Steps", check: (s) => s.totalSolved >= 1 },
-  { id: "solve_10", label: "10 Solved", check: (s) => s.totalSolved >= 10 },
-  { id: "solve_25", label: "25 Solved", check: (s) => s.totalSolved >= 25 },
-  { id: "solve_50", label: "50 Solved", check: (s) => s.totalSolved >= 50 },
-  { id: "solve_100", label: "Century!", check: (s) => s.totalSolved >= 100 },
   { id: "streak_5", label: "Streak x5", check: (s) => s.bestStreak >= 5 },
   { id: "streak_10", label: "Streak x10", check: (s) => s.bestStreak >= 10 },
   { id: "streak_20", label: "Unstoppable", check: (s) => s.bestStreak >= 20 },
@@ -93,7 +88,7 @@ function daysInMonth(year, month) {
 }
 
 function xpForLevel(level) {
-  return 100 * level;
+  return 130 * level;
 }
 
 function addPoints(basePoints) {

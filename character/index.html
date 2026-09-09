@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Math Character</title>
+<link rel="stylesheet" href="style.css?v=1" />
+</head>
+<body>
+  <div class="app">
+    <p class="cross-link">
+      <a href="../index.html">🔗 Long Division Quest</a> ·
+      <a href="../addition-subtraction/index.html">🔗 Add &amp; Subtract Quest</a> ·
+      <a href="../datetime1/index.html">🔗 Time &amp; Calendar Quest 1</a> ·
+      <a href="../datetime2/index.html">🔗 Time &amp; Calendar Quest 2</a>
+    </p>
+
+    <header class="char-header">
+      <div class="avatar-wrap">
+        <div class="avatar-circle" id="avatarCircle">
+          <span class="avatar-placeholder" id="avatarPlaceholder">🧑</span>
+          <img id="avatarImg" class="avatar-img" hidden />
+        </div>
+        <button class="btn secondary avatar-btn" id="avatarBtn">📷 Change Photo</button>
+        <input type="file" id="avatarInput" accept="image/*" hidden />
+      </div>
+      <div class="char-info">
+        <input type="text" id="nameInput" class="name-input" placeholder="Enter your name..." maxlength="24" />
+        <div class="rank-title" id="rankTitle"></div>
+        <div class="rank-sub" id="rankSub"></div>
+      </div>
+    </header>
+
+    <main class="skills-grid" id="skillsGrid"></main>
+  </div>
+
+  <script src="script.js?v=1"></script>
+</body>
+</html>

@@ -6,23 +6,18 @@ const DIFFICULTY = {
     min: 10,
     max: 99,
     regroupChance: 0.4,
-    points: 10,
+    points: 6,
   },
   threeDigit: {
     label: "Three-Digit",
     min: 100,
     max: 999,
     regroupChance: 0.55,
-    points: 20,
+    points: 30,
   },
 };
 
 const BADGE_DEFS = [
-  { id: "first_solve", label: "First Steps", check: (s) => s.totalSolved >= 1 },
-  { id: "solve_10", label: "10 Solved", check: (s) => s.totalSolved >= 10 },
-  { id: "solve_25", label: "25 Solved", check: (s) => s.totalSolved >= 25 },
-  { id: "solve_50", label: "50 Solved", check: (s) => s.totalSolved >= 50 },
-  { id: "solve_100", label: "Century!", check: (s) => s.totalSolved >= 100 },
   { id: "streak_5", label: "Streak x5", check: (s) => s.bestStreak >= 5 },
   { id: "streak_10", label: "Streak x10", check: (s) => s.bestStreak >= 10 },
   { id: "streak_20", label: "Unstoppable", check: (s) => s.bestStreak >= 20 },
@@ -79,7 +74,7 @@ function randInt(min, max) {
 }
 
 function xpForLevel(level) {
-  return 100 * level;
+  return 180 * level;
 }
 
 function addPoints(basePoints) {
