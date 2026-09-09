@@ -1,9 +1,8 @@
 // ---------- Config ----------
 
 const DIFFICULTY = {
-  easy: { label: "Easy", points: 6 },
-  medium: { label: "Medium", points: 20 },
-  hard: { label: "Hard", points: 45 },
+  easy: { label: "Easy", points: 8 },
+  hard: { label: "Hard", points: 30 },
 };
 
 const BADGE_DEFS = [
@@ -113,13 +112,6 @@ function checkBadges() {
   }
 }
 
-// ---------- Fraction helpers ----------
-
-function plainMixed(whole, num, den) {
-  if (num === 0) return String(whole);
-  return whole > 0 ? `${whole} ${num}/${den}` : `${num}/${den}`;
-}
-
 // ---------- Ruler visual ----------
 
 function rulerSVG(unit, totalUnits, ticksPerUnit, objStart, objEnd) {
@@ -132,8 +124,7 @@ function rulerSVG(unit, totalUnits, ticksPerUnit, objStart, objEnd) {
   for (let t = 0; t <= totalTicks; t++) {
     const x = 10 + (t / ticksPerUnit) * pxPerUnit;
     const isMajor = t % ticksPerUnit === 0;
-    const isHalf = ticksPerUnit % 2 === 0 && t % (ticksPerUnit / 2) === 0;
-    const tickLen = isMajor ? 26 : isHalf ? 18 : 11;
+    const tickLen = isMajor ? 26 : 11;
     ticks += `<line x1="${x.toFixed(1)}" y1="${rulerY}" x2="${x.toFixed(1)}" y2="${(rulerY - tickLen).toFixed(1)}" stroke="#1f2937" stroke-width="${isMajor ? 2 : 1}"/>`;
     if (isMajor) {
       ticks += `<text x="${x.toFixed(1)}" y="${rulerY + 16}" text-anchor="middle" font-size="12" fill="#1f2937">${t / ticksPerUnit}</text>`;
@@ -157,60 +148,45 @@ function rulerSVG(unit, totalUnits, ticksPerUnit, objStart, objEnd) {
 // ---------- Question generators ----------
 
 function genReadRulerInches(tier) {
-  const denom = tier === "easy" ? 1 : tier === "medium" ? 2 : 4;
-  const totalInches = tier === "easy" ? 8 : tier === "medium" ? 9 : 10;
-  const startTicks = tier === "hard" ? randInt(0, (totalInches - 3) * denom) : 0;
-  const maxLenTicks = Math.min(6 * denom, totalInches * denom - startTicks);
-  const lengthTicks = randInt(1, maxLenTicks);
-  const endTicks = startTicks + lengthTicks;
-  const lengthWhole = Math.floor(lengthTicks / denom);
-  const lengthNum = lengthTicks % denom;
-
-  const inputs =
-    denom === 1
-      ? [{ id: "l", label: "Length (in)", type: "number", min: 0, max: totalInches }]
-      : [
-          { id: "w", label: "Whole", type: "number", min: 0, max: totalInches },
-          { id: "n", label: "Numerator", type: "number", min: 0, max: denom - 1 },
-        ];
+  const totalInches = tier === "easy" ? 8 : 10;
+  const start = tier === "hard" ? randInt(1, totalInches - 3) : 0;
+  const maxLen = Math.min(6, totalInches - start);
+  const length = randInt(1, maxLen);
+  const end = start + length;
 
   return {
     category: "read",
-    visualHTML: rulerSVG("in", totalInches, denom, startTicks / denom, endTicks / denom),
-    promptText: denom === 1 ? "How long is the red bar (in inches)?" : `How long is the red bar (in inches, over ${denom})?`,
-    inputs,
-    check: (v) => (denom === 1 ? Number(v.l) === lengthWhole : Number(v.w) === lengthWhole && Number(v.n) === lengthNum),
-    correctSummary: () => `${plainMixed(lengthWhole, lengthNum, denom)} in`,
-    hint: startTicks === 0 ? "Count the tick marks from 0 to the end of the bar." : "The bar doesn't start at 0 — count how many tick marks it spans, from its start to its end.",
+    visualHTML: rulerSVG("in", totalInches, 1, start, end),
+    promptText: "How long is the red bar (in inches)?",
+    inputs: [{ id: "l", label: "Length (in)", type: "number", min: 0, max: totalInches }],
+    check: (v) => Number(v.l) === length,
+    correctSummary: () => `${length} in`,
+    hint: start === 0 ? "Count the tick marks from 0 to the end of the bar." : "The bar doesn't start at 0 — count how many whole inches it spans, from its start to its end.",
   };
 }
 
 function genReadRulerCM(tier) {
-  const tickStepTenths = tier === "easy" ? 10 : tier === "medium" ? 5 : 1;
-  const totalCM = tier === "easy" ? 15 : tier === "medium" ? 18 : 20;
-  const ticksPerUnit = 10 / tickStepTenths;
-  const startTenths = tier === "hard" ? randInt(0, (totalCM - 5) * 10) : 0;
-  const maxLenTenths = Math.min(12 * 10, totalCM * 10 - startTenths);
-  const lengthSteps = randInt(1, Math.floor(maxLenTenths / tickStepTenths));
-  const lengthTenths = lengthSteps * tickStepTenths;
-  const endTenths = startTenths + lengthTenths;
-  const lengthValue = lengthTenths / 10;
+  const totalCM = tier === "easy" ? 15 : 20;
+  const start = tier === "hard" ? randInt(1, totalCM - 4) : 0;
+  const maxLen = Math.min(12, totalCM - start);
+  const length = randInt(1, maxLen);
+  const end = start + length;
 
   return {
     category: "read",
-    visualHTML: rulerSVG("cm", totalCM, ticksPerUnit, startTenths / 10, endTenths / 10),
+    visualHTML: rulerSVG("cm", totalCM, 1, start, end),
     promptText: "How long is the red bar (in cm)?",
-    inputs: [{ id: "c", label: "Length (cm)", type: "number", min: 0, max: totalCM, step: tickStepTenths === 10 ? "1" : tickStepTenths === 5 ? "0.5" : "0.1" }],
-    check: (v) => Math.round(Number(v.c) * 10) === lengthTenths,
-    correctSummary: () => `${lengthValue % 1 === 0 ? lengthValue : lengthValue.toFixed(1)} cm`,
-    hint: tickStepTenths === 10 ? "Count the whole centimeter marks." : "Look closely at the small marks between the numbers to find the exact spot.",
+    inputs: [{ id: "c", label: "Length (cm)", type: "number", min: 0, max: totalCM }],
+    check: (v) => Number(v.c) === length,
+    correctSummary: () => `${length} cm`,
+    hint: start === 0 ? "Count the whole centimeter marks." : "The bar doesn't start at 0 — count how many whole centimeters it spans.",
   };
 }
 
 function genLengthArith(tier) {
   const unit = choice(["in", "cm", "ft"]);
   const op = choice(["add", "subtract"]);
-  const range = tier === "easy" ? [1, 12] : tier === "medium" ? [5, 30] : [10, 60];
+  const range = tier === "easy" ? [1, 12] : [10, 60];
   let a = randInt(range[0], range[1]);
   let b = randInt(range[0], range[1]);
   let result, phrase;
@@ -236,7 +212,7 @@ function genLengthArith(tier) {
 
 function genCompareLengths(tier) {
   const unit = choice(["in", "cm", "ft"]);
-  const range = tier === "easy" ? [2, 15] : tier === "medium" ? [5, 30] : [10, 50];
+  const range = tier === "easy" ? [2, 15] : [10, 50];
   let a = randInt(range[0], range[1]);
   let b = randInt(range[0], range[1]);
   while (a === b) b = randInt(range[0], range[1]);
@@ -244,7 +220,7 @@ function genCompareLengths(tier) {
   const diff = Math.abs(a - b);
 
   const inputs = [{ id: "opt", label: "Longer board", type: "select", options: ["Board A", "Board B"] }];
-  if (tier !== "easy") {
+  if (tier === "hard") {
     inputs.push({ id: "d", label: `By how much (${unit})`, type: "number", min: 0, max: 100 });
   }
 
@@ -264,7 +240,6 @@ function genCompareLengths(tier) {
 
 const POOLS = {
   easy: [genReadRulerInches, genReadRulerInches, genReadRulerCM, genLengthArith, genCompareLengths],
-  medium: [genReadRulerInches, genReadRulerInches, genReadRulerCM, genReadRulerCM, genLengthArith, genCompareLengths],
   hard: [genReadRulerInches, genReadRulerInches, genReadRulerCM, genLengthArith, genLengthArith, genCompareLengths],
 };
 

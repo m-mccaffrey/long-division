@@ -173,7 +173,7 @@ const SKILLS = [
       { id: "streak_20", label: "Unstoppable" },
       { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "convert_solve", label: "Unit Converter" },
-      { id: "perimeter_solve", label: "Perimeter Pro" },
+      { id: "mixed_solve", label: "Tape Measure Pro" },
     ],
   },
 ];

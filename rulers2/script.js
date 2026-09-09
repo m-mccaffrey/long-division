@@ -1,9 +1,8 @@
 // ---------- Config ----------
 
 const DIFFICULTY = {
-  easy: { label: "Easy", points: 10 },
-  medium: { label: "Medium", points: 25 },
-  hard: { label: "Hard", points: 60 },
+  easy: { label: "Easy", points: 15 },
+  hard: { label: "Hard", points: 50 },
 };
 
 const BADGE_DEFS = [
@@ -12,7 +11,7 @@ const BADGE_DEFS = [
   { id: "streak_20", label: "Unstoppable", check: (s) => s.bestStreak >= 20 },
   { id: "hard_solve", label: "Hard Mode Hero", check: (s) => s.hardSolved >= 1 },
   { id: "convert_solve", label: "Unit Converter", check: (s) => s.convertSolved >= 1 },
-  { id: "perimeter_solve", label: "Perimeter Pro", check: (s) => s.perimeterSolved >= 1 },
+  { id: "mixed_solve", label: "Tape Measure Pro", check: (s) => s.mixedSolved >= 1 },
 ];
 
 const STORAGE_KEY = "rulers2QuestState";
@@ -29,7 +28,7 @@ function loadStats() {
     totalSolved: 0,
     hardSolved: 0,
     convertSolved: 0,
-    perimeterSolved: 0,
+    mixedSolved: 0,
     earnedBadges: [],
   };
   try {
@@ -87,7 +86,7 @@ function registerSolve(category) {
   if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
   if (state.difficulty === "hard") stats.hardSolved += 1;
   if (category === "convert") stats.convertSolved += 1;
-  if (category === "perimeter") stats.perimeterSolved += 1;
+  if (category === "mixedArith") stats.mixedSolved += 1;
   checkBadges();
   saveStats();
   renderStats();
@@ -118,6 +117,16 @@ function checkBadges() {
 function plainMixed(whole, num, den) {
   if (num === 0) return String(whole);
   return whole > 0 ? `${whole} ${num}/${den}` : `${num}/${den}`;
+}
+
+// A user's whole/numerator/denominator answer is accepted if it is a valid
+// proper mixed number (0 <= num < den) that is numerically equal to the
+// target value (targetTicks / tickDenom) — any equivalent fraction works,
+// it does not need to match the ruler's own tick spacing or be reduced.
+function fracEquals(whole, num, den, targetTicks, tickDenom) {
+  if (!Number.isInteger(whole) || !Number.isInteger(num) || !Number.isInteger(den)) return false;
+  if (den <= 0 || num < 0 || num >= den || whole < 0) return false;
+  return (whole * den + num) * tickDenom === targetTicks * den;
 }
 
 // ---------- Visual builders ----------
@@ -154,39 +163,53 @@ function rulerSVG(unit, totalUnits, ticksPerUnit, objStart, objEnd) {
   </svg></div>`;
 }
 
-function rectDiagramSVG(wLabel, hLabel) {
-  const boxW = 200,
-    boxH = 130;
-  return `<div class="rect-wrap"><svg viewBox="0 0 260 180" width="260" height="180">
-    <rect x="30" y="20" width="${boxW}" height="${boxH}" fill="none" stroke="#1f2937" stroke-width="3"/>
-    <text x="${30 + boxW / 2}" y="14" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">${wLabel}</text>
-    <text x="16" y="${20 + boxH / 2}" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937" transform="rotate(-90 16 ${20 + boxH / 2})">${hLabel}</text>
-  </svg></div>`;
-}
-
 // ---------- Question generators ----------
 
-function genReadRulerEighths(tier) {
-  const denom = tier === "easy" ? 4 : 8;
+function genReadRulerFraction(tier) {
+  const tickDenom = tier === "easy" ? 4 : 8;
   const totalInches = 12;
-  const startTicks = randInt(0, (totalInches - 4) * denom);
-  const maxLenTicks = Math.min(6 * denom, totalInches * denom - startTicks);
+  const startTicks = tier === "hard" ? randInt(1 * tickDenom, (totalInches - 4) * tickDenom) : 0;
+  const maxLenTicks = Math.min(6 * tickDenom, totalInches * tickDenom - startTicks);
   const lengthTicks = randInt(1, maxLenTicks);
   const endTicks = startTicks + lengthTicks;
-  const lengthWhole = Math.floor(lengthTicks / denom);
-  const lengthNum = lengthTicks % denom;
 
   return {
     category: "read",
-    visualHTML: rulerSVG("in", totalInches, denom, startTicks / denom, endTicks / denom),
-    promptText: `How long is the red bar (in inches, over ${denom})?`,
+    visualHTML: rulerSVG("in", totalInches, tickDenom, startTicks / tickDenom, endTicks / tickDenom),
+    promptText: "How long is the red bar? Enter it as a whole number and a fraction.",
     inputs: [
       { id: "w", label: "Whole", type: "number", min: 0, max: totalInches },
-      { id: "n", label: "Numerator", type: "number", min: 0, max: denom - 1 },
+      { id: "n", label: "Numerator", type: "number", min: 0, max: 19 },
+      { id: "d", label: "Denominator", type: "number", min: 1, max: 20 },
     ],
-    check: (v) => Number(v.w) === lengthWhole && Number(v.n) === lengthNum,
-    correctSummary: () => `${plainMixed(lengthWhole, lengthNum, denom)} in`,
-    hint: "The bar doesn't start at 0. Count the small marks from where the bar starts to where it ends.",
+    check: (v) => fracEquals(Number(v.w), Number(v.n), Number(v.d), lengthTicks, tickDenom),
+    correctSummary: () => `${plainMixed(Math.floor(lengthTicks / tickDenom), lengthTicks % tickDenom, tickDenom)} in`,
+    hint:
+      startTicks === 0
+        ? `Count the small marks from 0. Each mark is 1/${tickDenom} of an inch. Your fraction doesn't need to be reduced — any equivalent fraction works.`
+        : `The bar doesn't start at 0 — count the marks from where it starts to where it ends (each mark is 1/${tickDenom} inch). Any equivalent fraction is fine.`,
+  };
+}
+
+function genReadRulerCM(tier) {
+  const tickStepTenths = tier === "easy" ? 5 : 1;
+  const totalCM = tier === "easy" ? 18 : 20;
+  const ticksPerUnit = 10 / tickStepTenths;
+  const startTenths = tier === "hard" ? randInt(10, (totalCM - 5) * 10) : 0;
+  const maxLenTenths = Math.min(12 * 10, totalCM * 10 - startTenths);
+  const lengthSteps = randInt(1, Math.floor(maxLenTenths / tickStepTenths));
+  const lengthTenths = lengthSteps * tickStepTenths;
+  const endTenths = startTenths + lengthTenths;
+  const lengthValue = lengthTenths / 10;
+
+  return {
+    category: "read",
+    visualHTML: rulerSVG("cm", totalCM, ticksPerUnit, startTenths / 10, endTenths / 10),
+    promptText: "How long is the red bar (in cm)?",
+    inputs: [{ id: "c", label: "Length (cm)", type: "number", min: 0, max: totalCM, step: tickStepTenths === 5 ? "0.5" : "0.1" }],
+    check: (v) => Math.round(Number(v.c) * 10) === lengthTenths,
+    correctSummary: () => `${lengthValue % 1 === 0 ? lengthValue : lengthValue.toFixed(1)} cm`,
+    hint: startTenths === 0 ? "Count the marks between the numbers to find the exact spot." : "The bar doesn't start at 0 — find the start and end positions, then find the difference.",
   };
 }
 
@@ -194,23 +217,20 @@ const CONV_POOLS = {
   easy: [
     { from: "ft", to: "in", factor: 12 },
     { from: "in", to: "ft", factor: 12, inverse: true },
-    { from: "m", to: "cm", factor: 100 },
-    { from: "cm", to: "m", factor: 100, inverse: true },
-  ],
-  medium: [
     { from: "yd", to: "ft", factor: 3 },
     { from: "ft", to: "yd", factor: 3, inverse: true },
+    { from: "m", to: "cm", factor: 100 },
+    { from: "cm", to: "m", factor: 100, inverse: true },
     { from: "cm", to: "mm", factor: 10 },
     { from: "mm", to: "cm", factor: 10, inverse: true },
-    { from: "km", to: "m", factor: 1000 },
-    { from: "m", to: "km", factor: 1000, inverse: true },
   ],
   hard: [
     { from: "yd", to: "in", factor: 36 },
     { from: "in", to: "yd", factor: 36, inverse: true },
+    { from: "km", to: "m", factor: 1000 },
+    { from: "m", to: "km", factor: 1000, inverse: true },
     { from: "m", to: "mm", factor: 1000 },
     { from: "mm", to: "m", factor: 1000, inverse: true },
-    { from: "km", to: "m", factor: 1000 },
     { from: "ft", to: "in", factor: 12 },
   ],
 };
@@ -241,7 +261,7 @@ function genUnitConversion(tier) {
 }
 
 function genMixedUnitArith(tier) {
-  const range = tier === "easy" ? [1, 5] : tier === "medium" ? [1, 10] : [2, 15];
+  const range = tier === "easy" ? [1, 6] : [3, 15];
   const op = choice(["add", "subtract"]);
   let f1 = randInt(range[0], range[1]);
   let i1 = randInt(0, 11);
@@ -281,63 +301,10 @@ function genMixedUnitArith(tier) {
   };
 }
 
-function genPerimeterRect(tier) {
-  const w = randInt(tier === "easy" ? 2 : 5, tier === "easy" ? 15 : 30);
-  const h = randInt(tier === "easy" ? 2 : 5, tier === "easy" ? 15 : 30);
-  const unit = choice(["ft", "cm", "in", "m"]);
-  const perimeter = 2 * (w + h);
-
-  return {
-    category: "perimeter",
-    visualHTML: rectDiagramSVG(`${w} ${unit}`, `${h} ${unit}`),
-    promptText: "What is the perimeter of the rectangle?",
-    inputs: [{ id: "p", label: `Perimeter (${unit})`, type: "number", min: 0, max: 1000 }],
-    check: (v) => Number(v.p) === perimeter,
-    correctSummary: () => `${perimeter} ${unit}`,
-    hint: "Perimeter is the distance all the way around: add all four sides, or use 2 × (length + width).",
-  };
-}
-
-function genMissingSide(tier) {
-  const w = randInt(3, 25);
-  const h = randInt(3, 25);
-  const perimeter = 2 * (w + h);
-  const unit = choice(["ft", "cm", "in", "m"]);
-  const hideWidth = Math.random() < 0.5;
-
-  return {
-    category: "perimeter",
-    visualHTML: rectDiagramSVG(hideWidth ? "?" : `${w} ${unit}`, hideWidth ? `${h} ${unit}` : "?"),
-    promptText: `The perimeter is ${perimeter} ${unit}. What is the missing side?`,
-    inputs: [{ id: "s", label: `Missing side (${unit})`, type: "number", min: 0, max: 500 }],
-    check: (v) => Number(v.s) === (hideWidth ? w : h),
-    correctSummary: () => `${hideWidth ? w : h} ${unit}`,
-    hint: "Perimeter = 2 × (length + width). Divide the perimeter by 2, then subtract the known side.",
-  };
-}
-
-function genPolygonPerimeter(tier) {
-  const unit = choice(["ft", "cm", "in", "m"]);
-  const numSides = randInt(5, 6);
-  const sides = [];
-  for (let i = 0; i < numSides; i++) sides.push(randInt(2, 20));
-  const perimeter = sides.reduce((a, b) => a + b, 0);
-
-  return {
-    category: "perimeter",
-    visualHTML: `<div class="phrase-display">A shape has sides: ${sides.join(", ")} (${unit})</div>`,
-    promptText: "What is the perimeter (the total distance around the shape)?",
-    inputs: [{ id: "p", label: `Perimeter (${unit})`, type: "number", min: 0, max: 2000 }],
-    check: (v) => Number(v.p) === perimeter,
-    correctSummary: () => `${perimeter} ${unit}`,
-    hint: "Add up the length of every side.",
-  };
-}
-
 function genLeftoverLength(tier) {
   const unit = choice(["ft", "in", "cm", "m"]);
-  const pieceLen = randInt(2, 8);
-  const numPieces = randInt(2, 5);
+  const pieceLen = tier === "easy" ? randInt(2, 6) : randInt(3, 9);
+  const numPieces = tier === "easy" ? randInt(2, 4) : randInt(2, 6);
   const usedLen = pieceLen * numPieces;
   const leftover = randInt(1, 15);
   const totalLen = usedLen + leftover;
@@ -354,9 +321,8 @@ function genLeftoverLength(tier) {
 }
 
 const POOLS = {
-  easy: [genReadRulerEighths, genUnitConversion, genMixedUnitArith, genPerimeterRect],
-  medium: [genReadRulerEighths, genUnitConversion, genMixedUnitArith, genPerimeterRect, genMissingSide],
-  hard: [genReadRulerEighths, genUnitConversion, genMixedUnitArith, genPolygonPerimeter, genMissingSide, genLeftoverLength],
+  easy: [genReadRulerFraction, genReadRulerCM, genUnitConversion, genMixedUnitArith, genLeftoverLength],
+  hard: [genReadRulerFraction, genReadRulerFraction, genReadRulerCM, genUnitConversion, genMixedUnitArith, genLeftoverLength],
 };
 
 // ---------- Rendering: stats & badges ----------
