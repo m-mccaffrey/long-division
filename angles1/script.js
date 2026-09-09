@@ -17,6 +17,12 @@ const BADGE_DEFS = [
 
 const STORAGE_KEY = "angles1QuestState";
 
+// Minimum distance (degrees) a visually-classified angle must keep from 90°
+// so a child is never asked to eyeball an ambiguous near-right angle.
+function deadZoneMargin(tier) {
+  return tier === "easy" ? 30 : tier === "medium" ? 22 : 15;
+}
+
 // ---------- Persisted stats ----------
 
 function loadStats() {
@@ -115,20 +121,21 @@ function checkBadges() {
 
 // ---------- Visual builders ----------
 
+function polarPoint(cx, cy, angleDeg, r) {
+  const rad = (angleDeg * Math.PI) / 180;
+  return { x: cx + r * Math.cos(rad), y: cy - r * Math.sin(rad) };
+}
+
 function angleSVG(measureDeg, baseRotation, size) {
   size = size || 200;
   const cx = size / 2;
   const cy = size * 0.68;
   const armLen = size * 0.4;
-  const rad = (deg) => (deg * Math.PI) / 180;
-  function pointAt(angleDeg, r) {
-    return { x: cx + r * Math.cos(rad(angleDeg)), y: cy - r * Math.sin(rad(angleDeg)) };
-  }
-  const p1 = pointAt(baseRotation, armLen);
-  const p2 = pointAt(baseRotation + measureDeg, armLen);
+  const p1 = polarPoint(cx, cy, baseRotation, armLen);
+  const p2 = polarPoint(cx, cy, baseRotation + measureDeg, armLen);
   const arcR = size * 0.16;
-  const a1 = pointAt(baseRotation, arcR);
-  const a2 = pointAt(baseRotation + measureDeg, arcR);
+  const a1 = polarPoint(cx, cy, baseRotation, arcR);
+  const a2 = polarPoint(cx, cy, baseRotation + measureDeg, arcR);
   const largeArc = measureDeg > 180 ? 1 : 0;
   return `<div class="angle-wrap"><svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
     <line x1="${cx}" y1="${cy}" x2="${p1.x.toFixed(1)}" y2="${p1.y.toFixed(1)}" stroke="#1f2937" stroke-width="5" stroke-linecap="round"/>
@@ -165,18 +172,14 @@ function turnWedgeSVG(fractionKey) {
   const cx = 90,
     cy = 90,
     r = 70;
-  function pt(a) {
-    const rad = (a * Math.PI) / 180;
-    return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
-  }
   let path;
   if (deg >= 360) {
     path = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#93c5fd" stroke="#1f2937" stroke-width="2"/>`;
   } else {
-    const p0 = pt(0);
-    const p1 = pt(deg);
+    const p0 = polarPoint(cx, cy, 90, r);
+    const p1 = polarPoint(cx, cy, 90 - deg, r);
     const largeArc = deg > 180 ? 1 : 0;
-    path = `<path d="M ${cx} ${cy} L ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${r} ${r} 0 ${largeArc} 1 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} Z" fill="#93c5fd" stroke="#1f2937" stroke-width="2"/>`;
+    path = `<path d="M ${cx} ${cy} L ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${r} ${r} 0 ${largeArc} 0 ${p1.x.toFixed(1)} ${p1.y.toFixed(1)} Z" fill="#93c5fd" stroke="#1f2937" stroke-width="2"/>`;
   }
   return `<div class="turn-wrap"><svg viewBox="0 0 180 180" width="180" height="180">
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#1f2937" stroke-width="2" stroke-dasharray="4 3"/>
@@ -184,14 +187,31 @@ function turnWedgeSVG(fractionKey) {
   </svg></div>`;
 }
 
+function compassSVG(angleDeg) {
+  const cx = 100,
+    cy = 100,
+    r = 75;
+  const labelPos = { North: [cx, cy - r - 14], East: [cx + r + 16, cy + 5], South: [cx, cy + r + 20], West: [cx - r - 16, cy + 5] };
+  const dirs = ["North", "East", "South", "West"];
+  const labels = dirs.map((d) => `<text x="${labelPos[d][0]}" y="${labelPos[d][1]}" font-size="14" font-weight="700" text-anchor="middle" fill="#1f2937">${d[0]}</text>`).join("");
+  const tip = polarPoint(cx, cy, 90 - angleDeg, r * 0.8);
+  return `<div class="turn-wrap"><svg viewBox="0 0 200 200" width="200" height="200">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#1f2937" stroke-width="3"/>
+    ${labels}
+    <line x1="${cx}" y1="${cy}" x2="${tip.x.toFixed(1)}" y2="${tip.y.toFixed(1)}" stroke="#c2410c" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="#1f2937"/>
+  </svg></div>`;
+}
+
 // ---------- Question generators ----------
 
 function genClassifyAngle(tier) {
+  const margin = deadZoneMargin(tier);
   const type = choice(["right", "acute", "obtuse"]);
   let measure;
   if (type === "right") measure = 90;
-  else if (type === "acute") measure = tier === "easy" ? randInt(20, 60) : tier === "medium" ? randInt(15, 75) : randInt(10, 85);
-  else measure = tier === "easy" ? randInt(120, 160) : tier === "medium" ? randInt(105, 165) : randInt(95, 170);
+  else if (type === "acute") measure = randInt(10, 90 - margin);
+  else measure = randInt(90 + margin, 175);
 
   const options = ["Right angle", "Smaller than a right angle", "Larger than a right angle"];
   const correctIndex = type === "right" ? 0 : type === "acute" ? 1 : 2;
@@ -207,16 +227,36 @@ function genClassifyAngle(tier) {
   };
 }
 
-function genTurn(tier) {
-  if (tier !== "easy" && Math.random() < 0.5) return genDegreeTurn(tier);
-  return genDirectionTurn(tier);
+function genConstructAngleType(tier) {
+  const margin = deadZoneMargin(tier);
+  const type = choice(["right", "acute", "obtuse"]);
+  const baseRotation = randInt(0, 340);
+  const step = tier === "easy" ? 15 : tier === "medium" ? 10 : 5;
+  const typeLabel = { right: "a right angle", acute: "smaller than a right angle", obtuse: "larger than a right angle" }[type];
+  const livePreview = (val) => angleSVG(val, baseRotation);
+  const tightTol = Math.min(margin, 10);
+  const range = type === "right" ? [90 - tightTol, 90 + tightTol] : type === "acute" ? [5, 90 - margin] : [90 + margin, 175];
+
+  return {
+    category: "type",
+    livePreview,
+    visualHTML: livePreview(10),
+    promptText: `Drag to make an angle that is ${typeLabel}.`,
+    inputs: [{ id: "a", label: "", type: "range", min: 0, max: 175, step, default: 10 }],
+    check: (v) => {
+      const val = Number(v.a);
+      return val >= range[0] && val <= range[1];
+    },
+    correctSummary: () => typeLabel,
+    hint: "Drag the slider to open or close the angle. A right angle looks like a perfect corner.",
+  };
 }
 
 function genDirectionTurn(tier) {
   const dirs = ["North", "East", "South", "West"];
   const startIdx = randInt(0, 3);
-  const fraction = choice(["quarter", "half", "three-quarter"]);
-  const direction = choice(["clockwise", "counterclockwise"]);
+  const fraction = choice(tier === "easy" ? ["quarter", "half"] : ["quarter", "half", "three-quarter"]);
+  const direction = tier === "easy" ? "clockwise" : choice(["clockwise", "counterclockwise"]);
   const steps = { quarter: 1, half: 2, "three-quarter": 3 }[fraction];
   const newIdx = direction === "clockwise" ? (startIdx + steps) % 4 : (((startIdx - steps) % 4) + 4) % 4;
 
@@ -232,7 +272,8 @@ function genDirectionTurn(tier) {
 }
 
 function genDegreeTurn(tier) {
-  const fraction = choice(["quarter", "half", "three-quarter", "full"]);
+  const pool = tier === "hard" ? ["quarter", "half", "three-quarter", "full"] : ["quarter", "half", "full"];
+  const fraction = choice(pool);
   const degrees = { quarter: 90, half: 180, "three-quarter": 270, full: 360 }[fraction];
 
   return {
@@ -244,6 +285,33 @@ function genDegreeTurn(tier) {
     correctSummary: () => `${degrees}°`,
     hint: "A full turn all the way around is 360°. A half turn is half of that, and a quarter turn is a quarter of that.",
   };
+}
+
+function genConstructTurn(tier) {
+  const dirs = ["North", "East", "South", "West"];
+  const startIdx = randInt(0, 3);
+  const fraction = choice(tier === "hard" ? ["quarter", "half", "three-quarter"] : ["quarter", "half"]);
+  const direction = choice(["clockwise", "counterclockwise"]);
+  const steps = { quarter: 1, half: 2, "three-quarter": 3 }[fraction];
+  const newIdx = direction === "clockwise" ? (startIdx + steps) % 4 : (((startIdx - steps) % 4) + 4) % 4;
+  const compassAngle = (i) => i * 90;
+  const livePreview = (val) => compassSVG(val);
+
+  return {
+    category: "turn",
+    livePreview,
+    visualHTML: livePreview(compassAngle(startIdx)),
+    promptText: `Start facing ${dirs[startIdx]}. Drag the arrow to show a ${fraction.replace("-", " ")} turn ${direction}.`,
+    inputs: [{ id: "d", label: "", type: "range", min: 0, max: 270, step: 90, default: compassAngle(startIdx) }],
+    check: (v) => Number(v.d) === compassAngle(newIdx),
+    correctSummary: () => dirs[newIdx],
+    hint: "Picture a compass: North, East, South, West going clockwise. Drag the arrow to the new direction.",
+  };
+}
+
+function genTurn(tier) {
+  if (tier !== "easy" && Math.random() < 0.4) return genDegreeTurn(tier);
+  return genDirectionTurn(tier);
 }
 
 function genCountAngles(tier) {
@@ -278,7 +346,7 @@ function genCountAngles(tier) {
 }
 
 function genCompareAngles(tier) {
-  const gapMin = tier === "easy" ? 60 : tier === "medium" ? 30 : 15;
+  const gapMin = tier === "easy" ? 70 : tier === "medium" ? 40 : 20;
   let a = randInt(10, 170);
   let b = randInt(10, 170);
   while (Math.abs(a - b) < gapMin) b = randInt(10, 170);
@@ -301,9 +369,9 @@ function genCompareAngles(tier) {
 }
 
 const POOLS = {
-  easy: [genClassifyAngle, genClassifyAngle, genTurn, genCountAngles, genCompareAngles],
-  medium: [genClassifyAngle, genClassifyAngle, genTurn, genTurn, genCountAngles, genCompareAngles],
-  hard: [genClassifyAngle, genTurn, genTurn, genCountAngles, genCountAngles, genCompareAngles, genCompareAngles],
+  easy: [genClassifyAngle, genConstructAngleType, genTurn, genCountAngles, genCompareAngles],
+  medium: [genClassifyAngle, genConstructAngleType, genTurn, genTurn, genCountAngles, genCompareAngles],
+  hard: [genClassifyAngle, genConstructAngleType, genTurn, genConstructTurn, genCountAngles, genCountAngles, genCompareAngles],
 };
 
 // ---------- Rendering: stats & badges ----------
@@ -431,11 +499,23 @@ function renderInputs() {
         const opts = inp.options.map((o, i) => `<option value="${i}">${o}</option>`).join("");
         return `<label>${inp.label}<select id="inp_${inp.id}" class="num-input">${opts}</select></label>`;
       }
+      if (inp.type === "range") {
+        return `<div class="slider-row"><input type="range" id="inp_${inp.id}" class="angle-slider" min="${inp.min}" max="${inp.max}" step="${inp.step}" value="${inp.default}" /></div>`;
+      }
       const step = inp.step ? ` step="${inp.step}"` : "";
       return `<label>${inp.label}<input type="number" id="inp_${inp.id}" class="num-input" min="${inp.min}" max="${inp.max}"${step} /></label>`;
     })
     .join("");
   controlRow.innerHTML = `${promptHtml}<div class="input-row">${inputsHtml}</div><button class="btn primary" id="submitBtn">Check Answer</button>`;
+
+  p.inputs.forEach((inp) => {
+    if (inp.type === "range" && p.livePreview) {
+      const el = document.getElementById(`inp_${inp.id}`);
+      el.addEventListener("input", () => {
+        document.getElementById("visualArea").innerHTML = p.livePreview(Number(el.value));
+      });
+    }
+  });
 
   const firstInput = controlRow.querySelector("input, select");
   if (firstInput) firstInput.focus();
@@ -461,14 +541,14 @@ function handleSubmit() {
   }
 
   if (p.check(values)) {
-    showFeedback(`Correct! The answer is ${p.correctSummary()}.`, true);
+    showFeedback(`Correct! ${p.correctSummary()}.`, true);
     popCard();
     addPoints(DIFFICULTY[state.difficulty].points);
     registerSolve(p.category);
     if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
     pendingAdvanceTimeout = setTimeout(newProblem, 1600);
   } else {
-    showFeedback(`Not quite. The answer was ${p.correctSummary()}.`, false);
+    showFeedback(`Not quite. ${p.correctSummary()}.`, false);
     shakeCard();
     registerMiss();
     pendingAdvanceTimeout = setTimeout(newProblem, 2200);

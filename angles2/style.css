@@ -591,3 +591,15 @@ input.num-input:focus, select.num-input:focus {
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.15));
   max-width: 100%;
 }
+
+.slider-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.angle-slider {
+  width: 260px;
+  accent-color: var(--accent);
+}

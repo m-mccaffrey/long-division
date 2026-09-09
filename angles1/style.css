@@ -618,3 +618,15 @@ input.num-input:focus, select.num-input:focus {
   color: var(--muted);
   text-transform: uppercase;
 }
+
+.slider-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
+}
+
+.angle-slider {
+  width: 260px;
+  accent-color: var(--accent);
+}
