@@ -142,6 +142,40 @@ const SKILLS = [
       { id: "deal_solve", label: "Deal Detective" },
     ],
   },
+  {
+    key: "rulers1",
+    storageKey: "rulers1QuestState",
+    name: "Rulers 1",
+    icon: "📏",
+    color: "#0369a1",
+    xpBase: 130,
+    url: "../rulers1/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "read_solve", label: "Ruler Reader" },
+      { id: "compare_solve", label: "Length Detective" },
+    ],
+  },
+  {
+    key: "rulers2",
+    storageKey: "rulers2QuestState",
+    name: "Rulers 2",
+    icon: "📐",
+    color: "#334155",
+    xpBase: 175,
+    url: "../rulers2/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "convert_solve", label: "Unit Converter" },
+      { id: "perimeter_solve", label: "Perimeter Pro" },
+    ],
+  },
 ];
 
 const RANKS = [

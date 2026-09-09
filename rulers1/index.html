@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Long Division Quest</title>
-<link rel="stylesheet" href="style.css?v=8" />
+<title>Rulers Quest 1</title>
+<link rel="stylesheet" href="style.css?v=1" />
 </head>
 <body>
   <div class="app">
     <header class="topbar">
-      <h1>🧮 Long Division Quest</h1>
+      <h1>📏 Rulers Quest 1</h1>
       <div class="stats" id="stats">
         <div class="stat">
           <span class="stat-label">Level</span>
@@ -35,23 +35,23 @@
     </header>
 
     <p class="cross-link">
-      <a href="character/index.html">🧑 My Character</a> ·
-      <a href="addition-subtraction/index.html">🔗 Add &amp; Subtract Quest</a> ·
-      <a href="datetime1/index.html">🔗 Time &amp; Calendar Quest 1</a> ·
-      <a href="datetime2/index.html">🔗 Time &amp; Calendar Quest 2</a> ·
-      <a href="multiplication1/index.html">🔗 Multiplication Quest 1</a> ·
-      <a href="multiplication2/index.html">🔗 Multiplication Quest 2</a> ·
-      <a href="money1/index.html">🔗 Money Quest 1</a> ·
-      <a href="money2/index.html">🔗 Money Quest 2</a> ·
-      <a href="rulers1/index.html">🔗 Rulers Quest 1</a> ·
-      <a href="rulers2/index.html">🔗 Rulers Quest 2</a>
+      <a href="../character/index.html">🧑 My Character</a> ·
+      <a href="../index.html">🔗 Long Division Quest</a> ·
+      <a href="../addition-subtraction/index.html">🔗 Add &amp; Subtract Quest</a> ·
+      <a href="../datetime1/index.html">🔗 Time &amp; Calendar Quest 1</a> ·
+      <a href="../datetime2/index.html">🔗 Time &amp; Calendar Quest 2</a> ·
+      <a href="../multiplication1/index.html">🔗 Multiplication Quest 1</a> ·
+      <a href="../multiplication2/index.html">🔗 Multiplication Quest 2</a> ·
+      <a href="../money1/index.html">🔗 Money Quest 1</a> ·
+      <a href="../money2/index.html">🔗 Money Quest 2</a> ·
+      <a href="../rulers2/index.html">🔗 Rulers Quest 2</a>
     </p>
 
     <section class="controls">
       <div class="control-group" id="difficultyGroup">
-        <button class="pill" data-difficulty="normal">Normal</button>
+        <button class="pill" data-difficulty="easy">Easy</button>
+        <button class="pill" data-difficulty="medium">Medium</button>
         <button class="pill" data-difficulty="hard">Hard</button>
-        <button class="pill" data-difficulty="ludicrous">Ludicrous</button>
       </div>
       <div class="control-group" id="modeGroup">
         <button class="pill" data-mode="guided">Guided Mode</button>
@@ -73,18 +73,7 @@
         </div>
 
         <div class="game-right">
-          <div class="ld-scroll">
-            <div class="ld-panel" id="ldPanel">
-              <div class="ld-quotient-stack" id="ldQuotientStack">
-                <div class="ld-quotient-term">&nbsp;</div>
-              </div>
-              <div class="ld-main-row">
-                <span class="ld-divisor" id="ldDivisor"></span>
-                <span class="ld-bracket"><span class="ld-dividend" id="ldDividend"></span></span>
-              </div>
-              <div class="ld-steps" id="ldSteps"></div>
-            </div>
-          </div>
+          <div class="visual-area" id="visualArea"></div>
         </div>
       </div>
     </main>
@@ -97,6 +86,6 @@
 
   <div class="confetti-layer" id="confettiLayer"></div>
 
-  <script src="script.js?v=8"></script>
+  <script src="script.js?v=1"></script>
 </body>
 </html>
