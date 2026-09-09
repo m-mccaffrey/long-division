@@ -108,6 +108,40 @@ const SKILLS = [
       { id: "mixed_solve", label: "Fraction Master" },
     ],
   },
+  {
+    key: "money1",
+    storageKey: "money1QuestState",
+    name: "Money 1",
+    icon: "🪙",
+    color: "#b45309",
+    xpBase: 130,
+    url: "../money1/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "mix_solve", label: "Coin Collector" },
+      { id: "change_solve", label: "Change Champ" },
+    ],
+  },
+  {
+    key: "money2",
+    storageKey: "money2QuestState",
+    name: "Money 2",
+    icon: "💵",
+    color: "#0e7490",
+    xpBase: 175,
+    url: "../money2/index.html",
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "tax_solve", label: "Tax Whiz" },
+      { id: "deal_solve", label: "Deal Detective" },
+    ],
+  },
 ];
 
 const RANKS = [
