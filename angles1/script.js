@@ -187,17 +187,28 @@ function turnWedgeSVG(fractionKey) {
   </svg></div>`;
 }
 
-function compassSVG(angleDeg) {
+function compassSVG(angleDeg, spinDirection) {
   const cx = 100,
     cy = 100,
     r = 75;
   const labelPos = { North: [cx, cy - r - 14], East: [cx + r + 16, cy + 5], South: [cx, cy + r + 20], West: [cx - r - 16, cy + 5] };
   const dirs = ["North", "East", "South", "West"];
   const labels = dirs.map((d) => `<text x="${labelPos[d][0]}" y="${labelPos[d][1]}" font-size="14" font-weight="700" text-anchor="middle" fill="#1f2937">${d[0]}</text>`).join("");
+  const tick = dirs
+    .map((d, i) => {
+      const p1 = polarPoint(cx, cy, 90 - i * 90, r);
+      const p2 = polarPoint(cx, cy, 90 - i * 90, r - 8);
+      return `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="#1f2937" stroke-width="2"/>`;
+    })
+    .join("");
   const tip = polarPoint(cx, cy, 90 - angleDeg, r * 0.8);
+  const spinGlyph = spinDirection === "clockwise" ? "↻" : spinDirection === "counterclockwise" ? "↺" : "";
+  const spinHTML = spinGlyph ? `<text x="${cx}" y="${cy + 10}" font-size="34" text-anchor="middle" fill="#9a3412" opacity="0.3">${spinGlyph}</text>` : "";
   return `<div class="turn-wrap"><svg viewBox="0 0 200 200" width="200" height="200">
     <circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="#1f2937" stroke-width="3"/>
+    ${tick}
     ${labels}
+    ${spinHTML}
     <line x1="${cx}" y1="${cy}" x2="${tip.x.toFixed(1)}" y2="${tip.y.toFixed(1)}" stroke="#c2410c" stroke-width="6" stroke-linecap="round"/>
     <circle cx="${cx}" cy="${cy}" r="5" fill="#1f2937"/>
   </svg></div>`;
@@ -262,8 +273,8 @@ function genDirectionTurn(tier) {
 
   return {
     category: "turn",
-    visualHTML: `<div class="phrase-display">You are facing ${dirs[startIdx]}. You turn a ${fraction.replace("-", " ")} turn ${direction}.</div>`,
-    promptText: "Which direction are you facing now?",
+    visualHTML: compassSVG(startIdx * 90, direction),
+    promptText: `Facing ${dirs[startIdx]}, turn a ${fraction.replace("-", " ")} turn ${direction}. Which direction are you facing now?`,
     inputs: [{ id: "d", label: "New direction", type: "select", options: dirs }],
     check: (v) => Number(v.d) === newIdx,
     correctSummary: () => dirs[newIdx],
@@ -295,7 +306,7 @@ function genConstructTurn(tier) {
   const steps = { quarter: 1, half: 2, "three-quarter": 3 }[fraction];
   const newIdx = direction === "clockwise" ? (startIdx + steps) % 4 : (((startIdx - steps) % 4) + 4) % 4;
   const compassAngle = (i) => i * 90;
-  const livePreview = (val) => compassSVG(val);
+  const livePreview = (val) => compassSVG(val, direction);
 
   return {
     category: "turn",
