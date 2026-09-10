@@ -141,6 +141,12 @@ body {
   color: var(--accent);
 }
 
+.pill.locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+  font-size: 0.75rem;
+}
+
 .card {
   background: var(--card-bg);
   border-radius: 20px;

@@ -16,6 +16,8 @@ const BADGE_DEFS = [
 
 const STORAGE_KEY = "rulersQuestState";
 
+const TIER_UNLOCK = { hard: 4 };
+
 const LEGACY_KEYS = [
   { key: "rulers1QuestState", xpBase: 130 },
   { key: "rulers2QuestState", xpBase: 175 },
@@ -118,14 +120,18 @@ function xpForLevel(level) {
 }
 
 function addPoints(basePoints) {
+  const prevLevel = stats.level;
   stats.score += basePoints;
   stats.xp += basePoints;
   while (stats.xp >= xpForLevel(stats.level)) {
     stats.xp -= xpForLevel(stats.level);
     stats.level += 1;
   }
+  const unlockedNewTier = Object.values(TIER_UNLOCK).some((req) => prevLevel < req && stats.level >= req);
   saveStats();
   renderStats();
+  updateSelectorUI();
+  if (unlockedNewTier) launchConfetti();
 }
 
 function registerSolve(category) {
@@ -337,7 +343,14 @@ function launchConfetti() {
 function setupSelectors() {
   document.querySelectorAll("#difficultyGroup .pill").forEach((btn) => {
     btn.addEventListener("click", () => {
-      state.difficulty = btn.dataset.difficulty;
+      const tier = btn.dataset.difficulty;
+      const req = TIER_UNLOCK[tier];
+      if (req && stats.level < req) {
+        showFeedback(`Reach level ${req} to unlock this difficulty!`, false);
+        shakeCard();
+        return;
+      }
+      state.difficulty = tier;
       updateSelectorUI();
       newProblem();
     });
@@ -354,7 +367,13 @@ function setupSelectors() {
 
 function updateSelectorUI() {
   document.querySelectorAll("#difficultyGroup .pill").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.difficulty === state.difficulty);
+    const tier = btn.dataset.difficulty;
+    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
+    const req = TIER_UNLOCK[tier];
+    const locked = req && stats.level < req;
+    btn.classList.toggle("locked", !!locked);
+    btn.textContent = locked ? `🔒 ${btn.dataset.label} (Lv ${req})` : btn.dataset.label;
+    btn.classList.toggle("active", tier === state.difficulty && !locked);
   });
   document.querySelectorAll("#modeGroup .pill").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.mode === state.mode);
