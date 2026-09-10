@@ -28,7 +28,7 @@ const BADGE_DEFS = [
 
 const STORAGE_KEY = "additionSubtractionQuestState";
 
-const TIER_UNLOCK = { threeDigit: 4 };
+const TIER_UNLOCK = { threeDigit: 3 };
 
 // ---------- Persisted stats ----------
 

@@ -16,7 +16,7 @@ const BADGE_DEFS = [
 
 const STORAGE_KEY = "rulersQuestState";
 
-const TIER_UNLOCK = { hard: 4 };
+const TIER_UNLOCK = { hard: 3 };
 
 const LEGACY_KEYS = [
   { key: "rulers1QuestState", xpBase: 130 },

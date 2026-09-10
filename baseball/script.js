@@ -16,7 +16,7 @@ const BADGE_DEFS = [
 
 const STORAGE_KEY = "baseballQuestState";
 
-const TIER_UNLOCK = { hard: 4 };
+const TIER_UNLOCK = { hard: 3 };
 
 // ---------- Persisted stats ----------
 
