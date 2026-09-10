@@ -343,19 +343,27 @@ function genForceOrTag(tier) {
   const forced = forcedRunners(bases);
   const occupiedKeys = ["first", "second", "third"].filter((k) => bases[k]);
   const chosen = choice(occupiedKeys);
-  const isForced = forced[chosen];
   const baseLabel = { first: "1st", second: "2nd", third: "3rd" }[chosen];
   const nextLabel = { first: "2nd base", second: "3rd base", third: "home plate" }[chosen];
+  // A force can only exist because the batter puts the ball in play and
+  // becomes a forced runner himself, pushing the chain of runners ahead of
+  // him. If no ball is hit — a straight steal — nothing forces anyone, so
+  // it's always a tag no matter how the bases are loaded.
+  const isBattedBall = Math.random() < 0.5;
+  const isForced = isBattedBall && forced[chosen];
+  const scenario = isBattedBall ? "A ground ball is hit." : "No ball was hit — the runner just takes off and tries to steal.";
   const options = ["Force play — just touch the base", "Tag play — must tag the runner"];
 
   return {
     category: "force",
-    visualHTML: diamondSVG(bases),
+    visualHTML: `<div class="phrase-display">${scenario}</div>${diamondSVG(bases)}`,
     promptText: `The runner on ${baseLabel} base is running to ${nextLabel}. Is this a force play or a tag play?`,
     inputs: [{ id: "ft", label: "Play type", type: "select", options }],
     check: (v) => Number(v.ft) === (isForced ? 0 : 1),
     correctSummary: () => (isForced ? "Force play" : "Tag play"),
-    hint: "A runner is forced only if every base behind them, back to home (including the batter), is occupied too. If not forced, you must physically tag them.",
+    hint: isBattedBall
+      ? "A runner is forced only if every base behind them, back to home (including the batter), is occupied too. If not forced, you must physically tag them."
+      : "A force only exists because the batter has to run somewhere. If the ball's never put in play — like on a steal — nobody is forced, so it's always a tag.",
   };
 }
 
