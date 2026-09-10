@@ -16,8 +16,6 @@ const BADGE_DEFS = [
 
 const STORAGE_KEY = "baseballQuestState";
 
-const POSITIONS = ["pitcher", "catcher", "first baseman", "second baseman", "shortstop", "third baseman", "left fielder", "center fielder", "right fielder"];
-
 // ---------- Persisted stats ----------
 
 function loadStats() {
@@ -164,10 +162,6 @@ function scorebugHTML(gs) {
   </div>`;
 }
 
-function positionCaption(position) {
-  return `<div class="position-caption">📍 You're playing ${position}</div>`;
-}
-
 // ---------- Rules engine ----------
 
 function randomGameState() {
@@ -300,7 +294,6 @@ function genRulesTrivia(tier) {
 function genForcedRunners(tier) {
   const bases = randomBaseState();
   const forced = forcedRunners(bases);
-  const position = choice(POSITIONS);
 
   const allOptions = [{ key: "batter", label: "The batter (running to 1st)" }];
   if (bases.first) allOptions.push({ key: "first", label: "Runner on 1st (running to 2nd)" });
@@ -312,7 +305,7 @@ function genForcedRunners(tier) {
 
   return {
     category: "force",
-    visualHTML: positionCaption(position) + diamondSVG(bases),
+    visualHTML: diamondSVG(bases),
     promptText: "A ground ball is hit. Which runners are FORCED to run to the next base?",
     inputs: [{ id: "forced", label: "", type: "checkboxGroup", options }],
     check: (v) => JSON.stringify([...v.forced].sort()) === JSON.stringify(correctKeys),
@@ -324,7 +317,6 @@ function genForcedRunners(tier) {
 function genForceOutBases(tier) {
   const bases = randomBaseState();
   const forced = forcedRunners(bases);
-  const position = choice(POSITIONS);
 
   const options = [
     { key: "first", label: "1st base" },
@@ -337,8 +329,8 @@ function genForceOutBases(tier) {
 
   return {
     category: "force",
-    visualHTML: positionCaption(position) + diamondSVG(bases),
-    promptText: "A ground ball is hit to you. Which base(s) have an automatic force out available?",
+    visualHTML: diamondSVG(bases),
+    promptText: "A ground ball is hit to a fielder. Which base(s) have an automatic force out available?",
     inputs: [{ id: "bases", label: "", type: "checkboxGroup", options }],
     check: (v) => JSON.stringify([...v.bases].sort()) === JSON.stringify(correctKeys),
     correctSummary: () => options.filter((o) => correctKeys.includes(o.key)).map((o) => o.label).join("; "),
@@ -354,12 +346,11 @@ function genForceOrTag(tier) {
   const isForced = forced[chosen];
   const baseLabel = { first: "1st", second: "2nd", third: "3rd" }[chosen];
   const nextLabel = { first: "2nd base", second: "3rd base", third: "home plate" }[chosen];
-  const position = choice(POSITIONS);
   const options = ["Force play — just touch the base", "Tag play — must tag the runner"];
 
   return {
     category: "force",
-    visualHTML: positionCaption(position) + diamondSVG(bases),
+    visualHTML: diamondSVG(bases),
     promptText: `The runner on ${baseLabel} base is running to ${nextLabel}. Is this a force play or a tag play?`,
     inputs: [{ id: "ft", label: "Play type", type: "select", options }],
     check: (v) => Number(v.ft) === (isForced ? 0 : 1),

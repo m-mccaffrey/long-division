@@ -680,13 +680,6 @@ input.num-input:focus, select.num-input:focus {
   filter: drop-shadow(0 4px 10px rgba(0,0,0,0.15));
 }
 
-.position-caption {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--accent);
-  text-align: center;
-}
-
 .checkbox-group {
   display: flex;
   flex-direction: column;
