@@ -147,6 +147,23 @@ const SKILLS = [
       { id: "sum_solve", label: "Angle Adder" },
     ],
   },
+  {
+    key: "baseball",
+    storageKey: "baseballQuestState",
+    name: "Baseball",
+    icon: "⚾",
+    color: "#166534",
+    xpBase: 150,
+    urls: [{ label: "Play", url: "../baseball/index.html" }],
+    badges: [
+      { id: "streak_5", label: "Streak x5" },
+      { id: "streak_10", label: "Streak x10" },
+      { id: "streak_20", label: "Unstoppable" },
+      { id: "hard_solve", label: "Hard Mode Hero" },
+      { id: "force_solve", label: "Force Out Fielder" },
+      { id: "tagup_solve", label: "Tag-Up Timer" },
+    ],
+  },
 ];
 
 const RANKS = [
