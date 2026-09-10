@@ -571,7 +571,7 @@ function handleFreeSubmit() {
   if (qVal === quotient && rVal === remainder) {
     showFeedback(`Correct! ${dividend.toLocaleString("en-US")} ÷ ${divisor} = ${quotient} remainder ${remainder}.`, true);
     popCard();
-    addPoints(Math.round(DIFFICULTY[state.difficulty].points * 1.5));
+    addPoints(Math.round(DIFFICULTY[state.difficulty].points * 1.15));
     registerSolve();
     if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
     pendingAdvanceTimeout = setTimeout(newProblem, 1600);

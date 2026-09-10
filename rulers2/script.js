@@ -549,7 +549,7 @@ function handleSubmit() {
   if (p.check(values)) {
     showFeedback(`Correct! The answer is ${p.correctSummary()}.`, true);
     popCard();
-    addPoints(DIFFICULTY[state.difficulty].points);
+    addPoints(Math.round(DIFFICULTY[state.difficulty].points * (state.mode === "free" ? 1.15 : 1)));
     registerSolve(p.category);
     if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
     pendingAdvanceTimeout = setTimeout(newProblem, 1600);
