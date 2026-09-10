@@ -15,7 +15,12 @@ const BADGE_DEFS = [
   { id: "turn_solve", label: "Turn Master", check: (s) => s.turnSolved >= 1 },
 ];
 
-const STORAGE_KEY = "angles1QuestState";
+const STORAGE_KEY = "anglesQuestState";
+
+const LEGACY_KEYS = [
+  { key: "angles1QuestState", xpBase: 130 },
+  { key: "angles2QuestState", xpBase: 175 },
+];
 
 // Minimum distance (degrees) a visually-classified angle must keep from 90°
 // so a child is never asked to eyeball an ambiguous near-right angle.
@@ -24,6 +29,47 @@ function deadZoneMargin(tier) {
 }
 
 // ---------- Persisted stats ----------
+
+function migrateLegacyState(legacyEntries, newXpBase, defaults) {
+  let found = false;
+  let totalXP = 0;
+  const merged = Object.assign({}, defaults);
+  legacyEntries.forEach(({ key, xpBase }) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    let s;
+    try {
+      s = JSON.parse(raw);
+    } catch (e) {
+      return;
+    }
+    found = true;
+    const lvl = s.level || 1;
+    let lifetimeXP = s.xp || 0;
+    for (let L = 1; L < lvl; L++) lifetimeXP += xpBase * L;
+    totalXP += lifetimeXP;
+    merged.score = (merged.score || 0) + (s.score || 0);
+    merged.bestStreak = Math.max(merged.bestStreak || 0, s.bestStreak || 0);
+    (s.earnedBadges || []).forEach((b) => {
+      if (!merged.earnedBadges.includes(b)) merged.earnedBadges.push(b);
+    });
+    Object.keys(s).forEach((k) => {
+      if (["score", "xp", "level", "streak", "bestStreak", "earnedBadges"].includes(k)) return;
+      if (typeof s[k] === "number") merged[k] = (merged[k] || 0) + s[k];
+    });
+  });
+  if (!found) return null;
+  let level = 1,
+    xp = totalXP;
+  while (xp >= newXpBase * level) {
+    xp -= newXpBase * level;
+    level += 1;
+  }
+  merged.level = level;
+  merged.xp = xp;
+  merged.streak = 0;
+  return merged;
+}
 
 function loadStats() {
   const defaults = {
@@ -40,8 +86,10 @@ function loadStats() {
   };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaults;
-    return Object.assign(defaults, JSON.parse(raw));
+    if (raw) return Object.assign(defaults, JSON.parse(raw));
+    const migrated = migrateLegacyState(LEGACY_KEYS, 175, defaults);
+    if (migrated) return migrated;
+    return defaults;
   } catch (e) {
     return defaults;
   }
@@ -73,7 +121,7 @@ function choice(arr) {
 }
 
 function xpForLevel(level) {
-  return 130 * level;
+  return 175 * level;
 }
 
 function addPoints(basePoints) {

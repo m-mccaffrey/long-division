@@ -132,6 +132,75 @@ body {
   color: rgba(255,255,255,0.75);
 }
 
+.level-chart-panel {
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(6px);
+  border-radius: 20px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+}
+
+.level-chart-panel h2 {
+  color: #fff;
+  font-size: 1rem;
+  margin: 0 0 14px;
+}
+
+.level-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.level-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.level-row-label {
+  width: 150px;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.level-row-icon {
+  font-size: 1.1rem;
+}
+
+.level-row-bar-track {
+  flex: 1;
+  height: 14px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.level-row-bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  min-width: 4%;
+  transition: width 0.4s ease;
+}
+
+.level-row-value {
+  width: 44px;
+  text-align: right;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .level-row-label { width: 110px; font-size: 0.75rem; }
+}
+
 .skills-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -226,8 +295,14 @@ body {
   color: #92400e;
 }
 
-.skill-play-link {
+.skill-play-row {
+  display: flex;
+  gap: 8px;
   margin-top: 6px;
+}
+
+.skill-play-link {
+  flex: 1;
   text-align: center;
   text-decoration: none;
   background: var(--skill-color, var(--accent));

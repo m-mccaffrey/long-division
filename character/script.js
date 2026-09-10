@@ -10,7 +10,7 @@ const SKILLS = [
     icon: "🧮",
     color: "#7c3aed",
     xpBase: 130,
-    url: "../index.html",
+    urls: [{ label: "Play", url: "../index.html" }],
     badges: [
       { id: "streak_5", label: "Streak x5" },
       { id: "streak_10", label: "Streak x10" },
@@ -27,7 +27,7 @@ const SKILLS = [
     icon: "➕➖",
     color: "#0d9488",
     xpBase: 180,
-    url: "../addition-subtraction/index.html",
+    urls: [{ label: "Play", url: "../addition-subtraction/index.html" }],
     badges: [
       { id: "streak_5", label: "Streak x5" },
       { id: "streak_10", label: "Streak x10" },
@@ -38,31 +38,16 @@ const SKILLS = [
     ],
   },
   {
-    key: "datetime1",
-    storageKey: "dateTime1QuestState",
-    name: "Time & Calendar 1",
+    key: "datetime",
+    storageKey: "timeCalendarQuestState",
+    name: "Time & Calendar",
     icon: "🕐",
     color: "#4f46e5",
-    xpBase: 130,
-    url: "../datetime1/index.html",
-    badges: [
-      { id: "streak_5", label: "Streak x5" },
-      { id: "streak_10", label: "Streak x10" },
-      { id: "streak_20", label: "Unstoppable" },
-      { id: "hard_solve", label: "Hard Mode Hero" },
-      { id: "clock_solve", label: "Clock Star" },
-      { id: "calendar_solve", label: "Calendar Wiz" },
-      { id: "arith_solve", label: "Time Traveler" },
-    ],
-  },
-  {
-    key: "datetime2",
-    storageKey: "dateTime2QuestState",
-    name: "Time & Calendar 2",
-    icon: "🗓️",
-    color: "#be123c",
     xpBase: 175,
-    url: "../datetime2/index.html",
+    urls: [
+      { label: "Play 1", url: "../datetime1/index.html" },
+      { label: "Play 2", url: "../datetime2/index.html" },
+    ],
     badges: [
       { id: "streak_5", label: "Streak x5" },
       { id: "streak_10", label: "Streak x10" },
@@ -75,13 +60,16 @@ const SKILLS = [
     ],
   },
   {
-    key: "multiplication1",
-    storageKey: "multiplication1QuestState",
-    name: "Multiplication 1",
+    key: "multiplication",
+    storageKey: "multiplicationQuestState",
+    name: "Multiplication",
     icon: "✖️",
     color: "#4d7c0f",
-    xpBase: 130,
-    url: "../multiplication1/index.html",
+    xpBase: 175,
+    urls: [
+      { label: "Play 1", url: "../multiplication1/index.html" },
+      { label: "Play 2", url: "../multiplication2/index.html" },
+    ],
     badges: [
       { id: "streak_5", label: "Streak x5" },
       { id: "streak_10", label: "Streak x10" },
@@ -89,33 +77,21 @@ const SKILLS = [
       { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "missing_factor_solve", label: "Fact Finder" },
       { id: "word_solve", label: "Story Solver" },
-    ],
-  },
-  {
-    key: "multiplication2",
-    storageKey: "multiplication2QuestState",
-    name: "Multiplication 2",
-    icon: "🧩",
-    color: "#6d28d9",
-    xpBase: 175,
-    url: "../multiplication2/index.html",
-    badges: [
-      { id: "streak_5", label: "Streak x5" },
-      { id: "streak_10", label: "Streak x10" },
-      { id: "streak_20", label: "Unstoppable" },
-      { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "decimal_solve", label: "Decimal Dynamo" },
       { id: "mixed_solve", label: "Fraction Master" },
     ],
   },
   {
-    key: "money1",
-    storageKey: "money1QuestState",
-    name: "Money 1",
+    key: "money",
+    storageKey: "moneyQuestState",
+    name: "Money",
     icon: "🪙",
     color: "#b45309",
-    xpBase: 130,
-    url: "../money1/index.html",
+    xpBase: 175,
+    urls: [
+      { label: "Play 1", url: "../money1/index.html" },
+      { label: "Play 2", url: "../money2/index.html" },
+    ],
     badges: [
       { id: "streak_5", label: "Streak x5" },
       { id: "streak_10", label: "Streak x10" },
@@ -123,33 +99,21 @@ const SKILLS = [
       { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "mix_solve", label: "Coin Collector" },
       { id: "change_solve", label: "Change Champ" },
-    ],
-  },
-  {
-    key: "money2",
-    storageKey: "money2QuestState",
-    name: "Money 2",
-    icon: "💵",
-    color: "#0e7490",
-    xpBase: 175,
-    url: "../money2/index.html",
-    badges: [
-      { id: "streak_5", label: "Streak x5" },
-      { id: "streak_10", label: "Streak x10" },
-      { id: "streak_20", label: "Unstoppable" },
-      { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "tax_solve", label: "Tax Whiz" },
       { id: "deal_solve", label: "Deal Detective" },
     ],
   },
   {
-    key: "rulers1",
-    storageKey: "rulers1QuestState",
-    name: "Rulers 1",
+    key: "rulers",
+    storageKey: "rulersQuestState",
+    name: "Rulers",
     icon: "📏",
     color: "#0369a1",
-    xpBase: 130,
-    url: "../rulers1/index.html",
+    xpBase: 175,
+    urls: [
+      { label: "Play 1", url: "../rulers1/index.html" },
+      { label: "Play 2", url: "../rulers2/index.html" },
+    ],
     badges: [
       { id: "streak_5", label: "Streak x5" },
       { id: "streak_10", label: "Streak x10" },
@@ -157,33 +121,21 @@ const SKILLS = [
       { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "read_solve", label: "Ruler Reader" },
       { id: "compare_solve", label: "Length Detective" },
-    ],
-  },
-  {
-    key: "rulers2",
-    storageKey: "rulers2QuestState",
-    name: "Rulers 2",
-    icon: "📐",
-    color: "#334155",
-    xpBase: 175,
-    url: "../rulers2/index.html",
-    badges: [
-      { id: "streak_5", label: "Streak x5" },
-      { id: "streak_10", label: "Streak x10" },
-      { id: "streak_20", label: "Unstoppable" },
-      { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "convert_solve", label: "Unit Converter" },
       { id: "mixed_solve", label: "Tape Measure Pro" },
     ],
   },
   {
-    key: "angles1",
-    storageKey: "angles1QuestState",
-    name: "Angles 1",
+    key: "angles",
+    storageKey: "anglesQuestState",
+    name: "Angles",
     icon: "🔺",
     color: "#c2410c",
-    xpBase: 130,
-    url: "../angles1/index.html",
+    xpBase: 175,
+    urls: [
+      { label: "Play 1", url: "../angles1/index.html" },
+      { label: "Play 2", url: "../angles2/index.html" },
+    ],
     badges: [
       { id: "streak_5", label: "Streak x5" },
       { id: "streak_10", label: "Streak x10" },
@@ -191,21 +143,6 @@ const SKILLS = [
       { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "type_solve", label: "Angle Spotter" },
       { id: "turn_solve", label: "Turn Master" },
-    ],
-  },
-  {
-    key: "angles2",
-    storageKey: "angles2QuestState",
-    name: "Angles 2",
-    icon: "🧭",
-    color: "#065f46",
-    xpBase: 175,
-    url: "../angles2/index.html",
-    badges: [
-      { id: "streak_5", label: "Streak x5" },
-      { id: "streak_10", label: "Streak x10" },
-      { id: "streak_20", label: "Unstoppable" },
-      { id: "hard_solve", label: "Hard Mode Hero" },
       { id: "measure_solve", label: "Protractor Pro" },
       { id: "sum_solve", label: "Angle Adder" },
     ],
@@ -214,10 +151,10 @@ const SKILLS = [
 
 const RANKS = [
   { min: 0, title: "Math Cadet" },
-  { min: 8, title: "Math Squire" },
-  { min: 12, title: "Math Knight" },
-  { min: 16, title: "Math Champion" },
-  { min: 22, title: "Math Grandmaster" },
+  { min: 6, title: "Math Squire" },
+  { min: 10, title: "Math Knight" },
+  { min: 14, title: "Math Champion" },
+  { min: 20, title: "Math Grandmaster" },
 ];
 
 // ---------- Helpers ----------
@@ -278,6 +215,23 @@ function renderHeader() {
   document.getElementById("rankSub").textContent = `Combined level ${levelSum} across all skills`;
 }
 
+function renderLevelChart() {
+  const chart = document.getElementById("levelChart");
+  const rows = SKILLS.map((skill) => ({ skill, level: loadSkillStats(skill.storageKey).level }));
+  const maxLevel = Math.max(5, ...rows.map((r) => r.level));
+  chart.innerHTML = rows
+    .map(({ skill, level }) => {
+      const pct = Math.round((level / maxLevel) * 100);
+      return `
+        <div class="level-row">
+          <div class="level-row-label"><span class="level-row-icon">${skill.icon}</span>${skill.name}</div>
+          <div class="level-row-bar-track"><div class="level-row-bar-fill" style="width:${pct}%; background:${skill.color}"></div></div>
+          <div class="level-row-value">Lv ${level}</div>
+        </div>`;
+    })
+    .join("");
+}
+
 function renderSkills() {
   const grid = document.getElementById("skillsGrid");
   grid.innerHTML = "";
@@ -311,7 +265,9 @@ function renderSkills() {
           })
           .join("")}
       </div>
-      <a class="skill-play-link" href="${skill.url}">▶ Play</a>
+      <div class="skill-play-row">
+        ${skill.urls.map((u) => `<a class="skill-play-link" href="${u.url}">▶ ${u.label}</a>`).join("")}
+      </div>
     `;
     grid.appendChild(card);
   });
@@ -346,6 +302,7 @@ function handleAvatarFile(file) {
 
 function init() {
   renderHeader();
+  renderLevelChart();
   renderSkills();
 
   document.getElementById("avatarCircle").addEventListener("click", () => {
