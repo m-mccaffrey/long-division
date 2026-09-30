@@ -164,6 +164,26 @@ const SKILLS = [
       { id: "tagup_solve", label: "Tag-Up Timer" },
     ],
   },
+  {
+    key: "scriptquest",
+    storageKey: "scriptQuestState",
+    name: "Script Quest",
+    icon: "🎭",
+    color: "#7f1d1d",
+    xpBase: 100,
+    urls: [{ label: "Play", url: "../scriptquest/index.html" }],
+    statsRow: (stats) => [
+      { label: "Lines translated", value: stats.linesTranslated || 0 },
+      { label: "Scenes done", value: stats.scenesCompleted || 0 },
+    ],
+    badges: [
+      { id: "first_line", label: "First Steps" },
+      { id: "getting_fluent", label: "Getting Fluent" },
+      { id: "wordsmith", label: "Wordsmith" },
+      { id: "scene_stealer", label: "Scene Stealer" },
+      { id: "bookworm", label: "Bookworm" },
+    ],
+  },
 ];
 
 const RANKS = [
@@ -177,7 +197,7 @@ const RANKS = [
 // ---------- Helpers ----------
 
 function loadSkillStats(storageKey) {
-  const defaults = { score: 0, xp: 0, level: 1, streak: 0, bestStreak: 0, earnedBadges: [] };
+  const defaults = { score: 0, xp: 0, level: 1, streak: 0, bestStreak: 0, earnedBadges: [], linesTranslated: 0, scenesCompleted: 0 };
   try {
     const raw = localStorage.getItem(storageKey);
     if (!raw) return defaults;
@@ -270,8 +290,12 @@ function renderSkills() {
       <div class="skill-xp-bar"><div class="skill-xp-fill" style="width:${pct}%"></div></div>
       <div class="skill-xp-label">${stats.xp} / ${threshold} XP</div>
       <div class="skill-stats-row">
-        <span>Score: <b>${stats.score}</b></span>
-        <span>Best streak: <b>${stats.bestStreak}</b></span>
+        ${(skill.statsRow ? skill.statsRow(stats) : [
+          { label: "Score", value: stats.score },
+          { label: "Best streak", value: stats.bestStreak },
+        ])
+          .map((s) => `<span>${s.label}: <b>${s.value}</b></span>`)
+          .join("")}
         <span>Badges: <b>${earnedCount}/${skill.badges.length}</b></span>
       </div>
       <div class="skill-badges">
