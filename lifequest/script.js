@@ -514,6 +514,109 @@ function genBudget(tier) {
   };
 }
 
+// Open-ended: many valid budgets, so it's graded by rules instead of one answer.
+function genBuildBudget(tier) {
+  const JOBS = ["Junior Mechanic", "Dental Assistant", "Bank Teller", "Electrician Apprentice", "Pastry Chef", "Office Coordinator"];
+  for (let tries = 0; tries < 200; tries++) {
+    const gross = randInt(28, 48) * 100;
+    const taxPct = choice([15, 18, 20, 22]);
+    const taxes = Math.round((gross * taxPct) / 100);
+    const net = gross - taxes;
+    const rentCap = Math.floor(net * 0.3);
+    const apts = [
+      { name: "Room in a shared house (2 roommates)", rent: randInt(10, 15) * 50 },
+      { name: "Small studio apartment", rent: randInt(16, 24) * 50 },
+      { name: "Nice 1-bedroom with a balcony", rent: randInt(26, 36) * 50 },
+    ];
+    const bills = [["Phone", randInt(4, 8) * 5], ["Internet", randInt(10, 15) * 5], ["Electric & gas", randInt(12, 24) * 5], ["Health insurance", randInt(10, 30) * 10]];
+    const billsTotal = sum(bills.map((b) => b[1]));
+    const transport = [
+      { name: "Monthly bus pass", cost: randInt(6, 12) * 10 },
+      { name: "Car (payment + insurance + gas)", cost: randInt(40, 65) * 10 },
+    ];
+    const foodMin = randInt(25, 35) * 10;
+    const saveMin = Math.ceil(net * 0.1);
+    const okApts = apts.filter((a) => a.rent <= rentCap);
+    if (!okApts.length || apts[2].rent <= rentCap) continue;
+    const cheapest = okApts[0].rent + billsTotal + transport[0].cost + foodMin + saveMin;
+    if (net - cheapest < 150) continue;
+
+    const ex = { taxes, housing: okApts[okApts.length - 1].rent, bills: billsTotal, transport: transport[0].cost, food: foodMin + 50, savings: saveMin };
+    const exMin = { ...ex, housing: okApts[0].rent, food: foodMin };
+    const pick = net - (ex.housing + ex.bills + ex.transport + ex.food + ex.savings) >= 0 ? ex : exMin;
+    const spare = net - (pick.housing + pick.bills + pick.transport + pick.food + pick.savings);
+    pick.savings += Math.floor(spare / 2);
+    pick.fun = spare - Math.floor(spare / 2);
+    const example = { ...pick };
+
+    const payLine =
+      tier === "hard"
+        ? `Salary: <b>${money(gross * 1200)} per year</b> (paid monthly)`
+        : `Gross pay: <b>${money(gross * 100)} per month</b>`;
+    const visual = `<div class="doc"><div class="doc-title">🏙️ Your First Apartment</div>
+      <div>💼 Job: ${choice(JOBS)}</div><div>${payLine}</div><div>🧾 Taxes withheld: <b>${taxPct}%</b> of gross</div>
+      <div class="doc-note"><b>Apartments</b> (pick one)<br>${apts.map((a) => `${a.name} — ${money(a.rent * 100)}/mo`).join("<br>")}</div>
+      <div class="doc-note"><b>Getting to work</b> (pick one)<br>${transport.map((t) => `${t.name} — ${money(t.cost * 100)}/mo`).join("<br>")}</div>
+      <div class="doc-note"><b>Monthly bills</b> (you pay all)<br>${bills.map(([n, c]) => `${n} — ${money(c * 100)}`).join("<br>")}</div>
+      <div class="fine-print" style="margin-top:10px"><b>Rules of thumb:</b><ul>
+        <li>Housing: no more than <b>30% of take-home pay</b> (pay after taxes)</li>
+        <li>Food: at least <b>${money(foodMin * 100)}</b> for groceries</li>
+        <li>Savings: at least <b>10% of take-home pay</b></li>
+        <li>Every dollar gets a job: all the boxes must add up to exactly your <b>gross</b> pay</li></ul></div></div>`;
+
+    const keys = ["taxes", "housing", "bills", "transport", "food", "savings", "fun"];
+    const labels = ["Taxes", "Housing", "Bills", "Transportation", "Food", "Savings", "Fun"];
+    const toNum = (x) => parseFloat(String(x).replace(/[$,\s]/g, ""));
+    const rules = (v) => {
+      const n = {};
+      keys.forEach((k) => (n[k] = toNum(v[k])));
+      const total = sum(keys.map((k) => n[k] || 0));
+      return [
+        [Math.abs(n.taxes - taxes) < 0.005, `Taxes are ${taxPct}% of ${money(gross * 100)} = ${money(taxes * 100)}`],
+        [apts.some((a) => a.rent === n.housing), "Housing must be the rent of one of the apartments"],
+        [n.housing <= rentCap, `Housing must be at most 30% of take-home (${money(net * 100)} × 0.30 = ${money(rentCap * 100)})`],
+        [Math.abs(n.bills - billsTotal) < 0.005, `Bills add up to ${money(billsTotal * 100)}`],
+        [transport.some((t) => t.cost === n.transport), "Transportation must be one of the two options"],
+        [n.food >= foodMin, `Food must be at least ${money(foodMin * 100)}`],
+        [n.savings >= saveMin - 0.005, `Savings must be at least 10% of take-home (${money(saveMin * 100)})`],
+        [n.fun >= 0, "Fun money can't be negative"],
+        [Math.abs(total - gross) < 0.005, `Everything must add up to ${money(gross * 100)} (yours adds up to ${money(Math.round(total * 100))})`],
+      ];
+    };
+
+    return {
+      category: "money",
+      visualHTML: visual,
+      promptText:
+        tier === "hard"
+          ? "Build your MONTHLY budget. First figure out your monthly gross pay from the salary — then give every dollar a job."
+          : "Build your monthly budget. Give every dollar a job!",
+      inputs: keys.map((k, i) => ({ id: k, label: labels[i] + " ($)", type: "number", min: 0, max: 100000, step: 0.01, cls: "money" })),
+      live: (v) => {
+        const total = sum(keys.map((k) => toNum(v[k]) || 0));
+        const left = gross - total;
+        return `Assigned ${money(Math.round(total * 100))} of ${money(gross * 100)} — ${
+          Math.abs(left) < 0.005 ? "✅ every dollar has a job" : left > 0 ? `${money(Math.round(left * 100))} still needs a job` : `⚠️ over by ${money(Math.round(-left * 100))}`
+        }`;
+      },
+      example,
+      check: (v) => rules(v).every((r) => r[0]),
+      correctSummary: (v) => {
+        const r = v ? rules(v) : [];
+        const failed = r.filter((x) => !x[0]);
+        if (v && !failed.length) return `Your budget follows every rule. You have ${money(Math.round(toNum(v.fun) * 100))} a month for fun and save ${money(Math.round(toNum(v.savings) * 100))}`;
+        return `${failed.map((x) => "❌ " + x[1]).join("<br>")}<br>One budget that works: ${keys.map((k, i) => `${labels[i]} ${money(example[k] * 100)}`).join(", ")}`;
+      },
+      hint:
+        (tier === "hard" ? `Monthly gross = yearly salary ÷ 12. ` : "") +
+        "Start with what's fixed: taxes, then bills. Pick the apartment and transportation that fit. Then food and savings minimums. Whatever is left is fun money!",
+      lesson:
+        "This is called a zero-based budget — every dollar is assigned before the month starts. It doesn't mean spending it all: savings counts as a job!",
+    };
+  }
+  return genBudget(tier);
+}
+
 function genCreditCard(tier) {
   const rate = choice([1.5, 2, 2.5]);
   const balance = randInt(20, 80) * 2500;
@@ -1185,13 +1288,13 @@ function genNutrition(tier) {
 const POOLS = {
   easy: [genReceiptTotal, genTip, genPaycheck, genSavingsGoal, genNutrition, genWarranty, genBusSchedule, genProcedure, genLifeFact, genLifeFact],
   medium: [
-    genReceiptTotal, genUnitPrice, genTip, genPaycheck, genSavingsGoal, genBudget,
+    genReceiptTotal, genUnitPrice, genTip, genPaycheck, genSavingsGoal, genBudget, genBuildBudget,
     genReturnPolicy, genWarranty, genPromo,
     genProcedure, genLifeFact,
     genBusSchedule, genRecipeScale, genPacks, genNutrition,
   ],
   hard: [
-    genReceiptTotal, genUnitPrice, genTip, genPaycheck, genBudget, genCreditCard,
+    genReceiptTotal, genUnitPrice, genTip, genPaycheck, genBudget, genBuildBudget, genBuildBudget, genCreditCard,
     genReturnPolicy, genReturnPolicy, genWarranty, genPromo, genPromo,
     genProcedure, genLifeFact,
     genBusSchedule, genRecipeScale, genPacks,
@@ -1345,7 +1448,17 @@ function renderInputs() {
       return `<label>${inp.label}<input type="number" inputmode="decimal" id="inp_${inp.id}" class="${cls}" min="${inp.min}" max="${inp.max}"${step} /></label>`;
     })
     .join("");
-  controlRow.innerHTML = `${promptHtml}<div class="input-row">${inputsHtml}</div><button class="btn primary" id="submitBtn">Check Answer</button>`;
+  const liveHtml = p.live ? `<div class="live-total" id="liveTotal"></div>` : "";
+  controlRow.innerHTML = `${promptHtml}<div class="input-row">${inputsHtml}</div>${liveHtml}<button class="btn primary" id="submitBtn">Check Answer</button>`;
+  if (p.live) {
+    const update = () => {
+      const v = {};
+      p.inputs.forEach((inp) => (v[inp.id] = document.getElementById(`inp_${inp.id}`).value));
+      document.getElementById("liveTotal").innerHTML = p.live(v);
+    };
+    controlRow.querySelectorAll("input").forEach((inp) => inp.addEventListener("input", update));
+    update();
+  }
 
   const firstInput = controlRow.querySelector("input, select");
   if (firstInput) firstInput.focus();
@@ -1375,7 +1488,7 @@ function handleSubmit() {
   const lesson = p.lesson ? `<div class="lesson">💡 ${p.lesson}</div>` : "";
 
   if (p.check(values)) {
-    showFeedback(`Correct! ${p.correctSummary()}.${lesson}`, true);
+    showFeedback(`Correct! ${p.correctSummary(values)}.${lesson}`, true);
     popCard();
     addPoints(Math.round(DIFFICULTY[state.difficulty].points * (state.mode === "free" ? 1.15 : 1)));
     registerSolve(p.category);
@@ -1383,7 +1496,7 @@ function handleSubmit() {
     pendingAdvanceTimeout = setTimeout(newProblem, p.lesson ? 4500 : 1800);
   } else {
     // No auto-advance on a miss: the explanation is the point, so the kid moves on when ready.
-    showFeedback(`Not quite. ${p.correctSummary()}.${lesson}`, false);
+    showFeedback(`Not quite. ${p.correctSummary(values)}.${lesson}`, false);
     shakeCard();
     registerMiss();
     document.getElementById("newProblemBtn").textContent = "Next Problem ›";

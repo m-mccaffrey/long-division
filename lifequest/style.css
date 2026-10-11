@@ -771,3 +771,13 @@ select.num-input.wide {
 input.num-input.money {
   width: 110px;
 }
+
+.live-total {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--pill-bg);
+  border-radius: 8px;
+  padding: 6px 12px;
+  text-align: center;
+}
