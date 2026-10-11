@@ -92,18 +92,6 @@ function money(cents) {
   return neg ? "−" + s : s;
 }
 
-// Typed dollars vs. expected cents, allowing `tol` cents of rounding slack.
-function centsNear(typed, cents, tol = 0) {
-  const v = parseFloat(String(typed).replace(/[$,\s]/g, ""));
-  if (isNaN(v)) return false;
-  return Math.abs(v * 100 - cents) <= tol + 0.5;
-}
-
-function numNear(typed, target, tol = 0.01) {
-  const v = parseFloat(String(typed).replace(/[,\s]/g, ""));
-  if (isNaN(v)) return false;
-  return Math.abs(v - target) <= tol;
-}
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -119,17 +107,7 @@ function clockStr(mins) {
   return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
-function fracStr(x) {
-  const whole = Math.floor(x + 1e-9);
-  const rem = Math.round((x - whole) * 8) / 8;
-  const glyph = { 0.125: "⅛", 0.25: "¼", 0.375: "⅜", 0.5: "½", 0.625: "⅝", 0.75: "¾", 0.875: "⅞" }[rem] || "";
-  if (!whole) return glyph || "0";
-  return glyph ? `${whole} ${glyph}` : String(whole);
-}
 
-function moneyInput(id, label) {
-  return { id, label, type: "number", min: 0, max: 100000, step: 0.01, cls: "money" };
-}
 
 function selectInput(id, label, options) {
   return { id, label, type: "select", options, cls: "wide" };
@@ -190,70 +168,8 @@ function checkBadges() {
 // MONEY
 // ================================================================
 
-const GROCERIES = [
-  ["Milk (gallon)", 289, 449], ["Bread", 229, 399], ["Eggs (dozen)", 299, 549], ["Bananas", 129, 249],
-  ["Cereal", 349, 599], ["Chicken breast", 699, 1199], ["Apples (bag)", 399, 649], ["Cheddar cheese", 299, 549],
-  ["Spaghetti", 129, 229], ["Pasta sauce", 199, 379], ["Rice (2 lb)", 249, 449], ["Yogurt cup", 89, 139],
-  ["Peanut butter", 249, 429], ["Frozen pizza", 499, 799], ["Orange juice", 299, 479], ["Carrots (bag)", 99, 199],
-];
 
-function shelfPrice(lo, hi) {
-  return randInt(Math.ceil(lo / 10), Math.floor(hi / 10)) * 10 + 9;
-}
 
-function genReceiptTotal(tier) {
-  const n = tier === "easy" ? 3 : tier === "medium" ? 4 : 5;
-  const items = shuffle(GROCERIES)
-    .slice(0, n)
-    .map(([name, lo, hi]) => ({ name, price: shelfPrice(lo, hi), qty: tier === "easy" ? 1 : choice([1, 1, 2, 3]) }));
-  const subtotal = sum(items.map((i) => i.price * i.qty));
-  const couponItem = tier === "hard" ? choice(items) : null;
-  const coupon = couponItem ? 100 : 0;
-  const taxRate = tier === "easy" ? 0 : choice([5, 6, 7, 8]);
-  const taxable = subtotal - coupon;
-  const tax = Math.round((taxable * taxRate) / 100);
-  const total = taxable + tax;
-
-  const rows = items
-    .map((i) => `<tr><td>${i.name}</td><td class="num">${i.qty} × ${money(i.price)}</td></tr>`)
-    .join("");
-  const notes = [];
-  if (couponItem) notes.push(`✂️ Coupon: $1.00 off ${couponItem.name}`);
-  if (taxRate) notes.push(`Sales tax: ${taxRate}%`);
-  const visual = `<div class="doc receipt"><div class="doc-title">🛒 Your Cart</div><table>${rows}</table>${notes
-    .map((n) => `<div class="doc-note">${n}</div>`)
-    .join("")}</div>`;
-
-  const prompt =
-    tier === "easy"
-      ? "What is the total for everything in your cart?"
-      : tier === "medium"
-      ? "What will you pay after sales tax? (Round the tax to the nearest cent.)"
-      : "Use the coupon, then add sales tax. What will you pay? (Round tax to the nearest cent.)";
-
-  let work = `Items add up to ${money(subtotal)}`;
-  if (coupon) work += `, minus the $1.00 coupon = ${money(taxable)}`;
-  if (taxRate) work += `, plus ${taxRate}% tax (${money(tax)})`;
-  work += ` = ${money(total)}`;
-
-  return {
-    category: "money",
-    visualHTML: visual,
-    promptText: prompt,
-    inputs: [moneyInput("t", "Total ($)")],
-    check: (v) => centsNear(v.t, total, taxRate ? 1 : 0),
-    correctSummary: () => work,
-    hint:
-      tier === "easy"
-        ? "Line up the decimal points and add the prices."
-        : tier === "medium"
-        ? "Find the subtotal (don't forget the quantities!), then tax = subtotal × rate ÷ 100. Add them."
-        : "Order matters: subtotal → subtract the coupon → then figure the tax on what's left.",
-    lesson: taxRate
-      ? "Price tags in most US stores don't include sales tax — your total at the register will be higher than the tags add up to."
-      : "Keeping a running total while you shop means no surprises at the register.",
-  };
-}
 
 const UNIT_PRODUCTS = [
   { name: "Cereal", unit: "oz", small: [12, 14, 18], big: [24, 32], cpu: [14, 30] },
@@ -289,19 +205,14 @@ function genUnitPrice(tier) {
     <tr><td>Size B</td><td class="num">${b.size} ${prod.unit}</td><td class="num">${money(b.price)}</td></tr>
   </table></div>`;
 
-  const inputs = [selectInput("pick", "Better deal", ["Size A", "Size B"])];
-  if (tier === "hard") inputs.push(moneyInput("u", `Its price per ${prod.unit} ($)`));
   const unitRounded = Math.round(better.unitCents);
 
   return {
     category: "money",
     visualHTML: visual,
-    promptText:
-      tier === "hard"
-        ? `Which is the better deal, and what is its price per ${prod.unit} (to the nearest cent)?`
-        : `Which package is the better deal?`,
-    inputs,
-    check: (v) => Number(v.pick) === betterIdx && (tier !== "hard" || centsNear(v.u, unitRounded, 1)),
+    promptText: "Which package is the better deal?",
+    inputs: [selectInput("pick", "Better deal", ["Size A", "Size B"])],
+    check: (v) => Number(v.pick) === betterIdx,
     correctSummary: () =>
       `A: ${money(a.price)} ÷ ${a.size} ≈ ${money(Math.round(a.unitCents))} per ${prod.unit}. B: ${money(b.price)} ÷ ${b.size} ≈ ${money(
         Math.round(b.unitCents)
@@ -313,206 +224,11 @@ function genUnitPrice(tier) {
   };
 }
 
-function genTip(tier) {
-  if (tier === "easy") {
-    const bill = randInt(4, 16) * 500;
-    const pct = choice([10, 20]);
-    const tip = (bill * pct) / 100;
-    return {
-      category: "money",
-      visualHTML: restaurantBill(bill),
-      promptText: `You want to leave a ${pct}% tip. How much is the tip?`,
-      inputs: [moneyInput("t", "Tip ($)")],
-      check: (v) => centsNear(v.t, tip),
-      correctSummary: () => `${pct}% of ${money(bill)} = ${money(tip)}`,
-      hint: pct === 10 ? "10% is easy: move the decimal point one place to the left." : "Find 10% (move the decimal one place left), then double it.",
-      lesson: "Quick trick: 10% → move the decimal. 20% → double that. 15% → 10% plus half of 10%.",
-    };
-  }
-  const bill = randInt(1800, 9800);
-  const pct = choice([15, 18, 20]);
-  const tip = Math.round((bill * pct) / 100);
-  if (tier === "medium") {
-    return {
-      category: "money",
-      visualHTML: restaurantBill(bill),
-      promptText: `You leave a ${pct}% tip. What is the total you pay, including the tip? (Round the tip to the nearest cent.)`,
-      inputs: [moneyInput("t", "Total ($)")],
-      check: (v) => centsNear(v.t, bill + tip, 1),
-      correctSummary: () => `Tip = ${pct}% of ${money(bill)} = ${money(tip)}. Total = ${money(bill + tip)}`,
-      hint: "Tip = bill × percent ÷ 100. Then add it to the bill.",
-      lesson: "In the US, servers are often paid a low base wage, so tips are a big part of their pay.",
-    };
-  }
-  const people = randInt(3, 6);
-  const total = bill + tip;
-  const share = Math.round(total / people);
-  return {
-    category: "money",
-    visualHTML: restaurantBill(bill),
-    promptText: `${people} friends split the bill evenly and add a ${pct}% tip. How much does each person pay? (Nearest cent.)`,
-    inputs: [moneyInput("t", "Each pays ($)")],
-    check: (v) => centsNear(v.t, share, 2),
-    correctSummary: () => `Tip ${money(tip)} + bill ${money(bill)} = ${money(total)}. ÷ ${people} ≈ ${money(share)} each`,
-    hint: "Figure out the tip on the whole bill first, add it on, then divide by the number of people.",
-    lesson: "Splitting evenly is simplest — but if someone ordered a lot more, it's fair to split by what each person ordered.",
-  };
-}
 
-function restaurantBill(cents) {
-  return `<div class="doc receipt"><div class="doc-title">🍽️ Rosa's Diner</div><table>
-    <tr><td>Food &amp; drinks</td><td class="num">${money(cents)}</td></tr>
-    <tr class="total-row"><td>Amount due</td><td class="num">${money(cents)}</td></tr>
-  </table><div class="doc-sub" style="margin-top:8px">Tip: ______</div></div>`;
-}
 
-function genPaycheck(tier) {
-  const rate = tier === "medium" ? randInt(6, 10) * 2 : randInt(12, 20);
-  const hours = tier === "easy" ? randInt(8, 25) : tier === "medium" ? randInt(42, 50) : randInt(20, 40);
-  const reg = Math.min(hours, 40);
-  const ot = Math.max(0, hours - 40);
-  const gross = reg * rate * 100 + ot * rate * 150;
 
-  const job = choice(["Lifeguard", "Grocery Clerk", "Camp Counselor", "Barista", "Dog Walker"]);
-  let rows = `<tr><td>Job</td><td class="num">${job}</td></tr>
-    <tr><td>Hourly rate</td><td class="num">${money(rate * 100)}</td></tr>
-    <tr><td>Hours worked</td><td class="num">${hours}</td></tr>`;
-  let taxPct = 0,
-    insurance = 0;
-  if (tier === "hard") {
-    taxPct = choice([10, 12, 15]);
-    insurance = choice([2500, 3500, 4500]);
-    rows += `<tr><td>Taxes withheld</td><td class="num">${taxPct}% of gross</td></tr>
-      <tr><td>Health insurance</td><td class="num">${money(insurance)}</td></tr>`;
-  }
-  const note = tier === "medium" ? `<div class="doc-note">Overtime: hours over 40 pay 1.5× the hourly rate.</div>` : "";
-  const visual = `<div class="doc"><div class="doc-title">💵 Pay Stub</div><table>${rows}</table>${note}</div>`;
 
-  if (tier === "hard") {
-    const tax = Math.round((gross * taxPct) / 100);
-    const net = gross - tax - insurance;
-    return {
-      category: "money",
-      visualHTML: visual,
-      promptText: "What is your NET pay (the amount that actually lands in your bank account)?",
-      inputs: [moneyInput("n", "Net pay ($)")],
-      check: (v) => centsNear(v.n, net, 1),
-      correctSummary: () => `Gross = ${hours} × ${money(rate * 100)} = ${money(gross)}. Minus taxes ${money(tax)} and insurance ${money(insurance)} = ${money(net)}`,
-      hint: "Gross pay = hours × rate. Then subtract the tax (a percent of gross) and the insurance (a flat amount).",
-      lesson: "Your first paycheck is usually smaller than people expect — 'gross' is what you earned, 'net' is what you keep.",
-    };
-  }
-  return {
-    category: "money",
-    visualHTML: visual,
-    promptText: "What is your gross pay for this period (before any deductions)?",
-    inputs: [moneyInput("g", "Gross pay ($)")],
-    check: (v) => centsNear(v.g, gross),
-    correctSummary: () =>
-      ot
-        ? `40 × ${money(rate * 100)} = ${money(40 * rate * 100)}, plus ${ot} overtime hours × ${money(rate * 150)} = ${money(ot * rate * 150)}. Total ${money(gross)}`
-        : `${hours} × ${money(rate * 100)} = ${money(gross)}`,
-    hint: ot ? "Split the hours: the first 40 at the normal rate, the rest at 1.5× the rate." : "Multiply hours worked by the hourly rate.",
-    lesson: ot ? "Overtime is the law for most hourly jobs in the US — know your rights when you start working!" : "Always double-check your pay stub hours against what you actually worked.",
-  };
-}
 
-const GOALS = [
-  ["new bike", 18000], ["game console", 35000], ["pair of sneakers", 8500], ["concert ticket", 12000],
-  ["skateboard", 9500], ["guitar", 22000], ["phone case and earbuds", 6500],
-];
-
-function genSavingsGoal(tier) {
-  const [item, goal] = choice(GOALS);
-  let saved, weekly, spend = 0;
-  if (tier === "easy") {
-    saved = 0;
-    weekly = choice([500, 1000, 2000, 2500].filter((w) => goal % w === 0)) || 500;
-  } else {
-    saved = randInt(1, 8) * 500;
-    weekly = randInt(6, 25) * 100;
-    if (tier === "hard") spend = randInt(2, 5) * 100;
-  }
-  const net = weekly - spend;
-  const weeks = Math.ceil((goal - saved) / net);
-  const lines = [`🎯 Goal: ${item} — ${money(goal)}`];
-  if (saved) lines.push(`🐷 Already saved: ${money(saved)}`);
-  lines.push(`💼 You earn ${money(weekly)} every week`);
-  if (spend) lines.push(`🍿 You spend ${money(spend)} of it each week on snacks`);
-  const visual = `<div class="doc"><div class="doc-title">Savings Plan</div>${lines.map((l) => `<div style="margin:6px 0">${l}</div>`).join("")}</div>`;
-  return {
-    category: "money",
-    visualHTML: visual,
-    promptText: "How many weeks until you can buy it?",
-    inputs: [{ id: "w", label: "Weeks", type: "number", min: 0, max: 500 }],
-    check: (v) => Number(v.w) === weeks,
-    correctSummary: () =>
-      `You still need ${money(goal - saved)} and save ${money(net)} a week. ${money(goal - saved)} ÷ ${money(net)} = ${((goal - saved) / net).toFixed(2).replace(/\.00$/, "")}${
-        (goal - saved) % net ? `, so round UP to ${weeks} weeks` : " weeks"
-      }`,
-    hint: tier === "easy" ? "Divide the price by how much you save each week." : "Subtract what you've saved from the goal. Divide by what you save each week — and if there's a remainder, you need one more week!",
-    lesson: spend ? "Small weekly spending adds up — cutting snacks could get you there weeks sooner." : "Saving a set amount every week is called 'paying yourself first.'",
-  };
-}
-
-function genBudget(tier) {
-  const income = choice([180000, 200000, 220000, 240000, 260000]);
-  const exp = [
-    ["Rent", randInt(28, 44) * 2500],
-    ["Groceries", randInt(25, 40) * 1000],
-    ["Phone", randInt(35, 75) * 100],
-    ["Bus pass", randInt(6, 12) * 1000],
-    ["Utilities", randInt(9, 18) * 1000],
-    ["Fun money", randInt(10, 25) * 1000],
-  ];
-  const spent = sum(exp.map((e) => e[1]));
-  const left = income - spent;
-  const rows = exp.map(([n, c]) => `<tr><td>${n}</td><td class="num">${money(c)}</td></tr>`).join("");
-  const visual = `<div class="doc"><div class="doc-title">📒 Monthly Budget</div><table>
-    <tr><td><b>Take-home pay</b></td><td class="num"><b>${money(income)}</b></td></tr>
-    <tr><th colspan="2">Expenses</th></tr>${rows}</table></div>`;
-
-  const variant = tier === "medium" ? "left" : choice(["save", "rent"]);
-  if (variant === "left" || left <= 0) {
-    return {
-      category: "money",
-      visualHTML: visual,
-      promptText: "How much money is left over at the end of the month? (If you're over budget, type a negative number.)",
-      inputs: [{ id: "l", label: "Left over ($)", type: "number", min: -100000, max: 100000, step: 0.01, cls: "money" }],
-      check: (v) => centsNear(v.l, left),
-      correctSummary: () => `Expenses total ${money(spent)}. ${money(income)} − ${money(spent)} = ${money(left)}`,
-      hint: "Add up all the expenses, then subtract from take-home pay.",
-      lesson: left < 0 ? "Over budget! Real budgets need cuts somewhere — fun money and groceries are usually the easiest to trim." : "Whatever's left over is your chance to save. Many people aim to save at least 10% of their pay.",
-    };
-  }
-  if (variant === "save") {
-    const fun = exp[5][1];
-    const target = left + randInt(2, Math.max(2, Math.floor(fun / 2500))) * 2500;
-    const cut = target - left;
-    return {
-      category: "money",
-      visualHTML: visual,
-      promptText: `You want to put ${money(target)} into savings every month. How much do you need to cut from Fun money?`,
-      inputs: [moneyInput("c", "Cut ($)")],
-      check: (v) => centsNear(v.c, cut),
-      correctSummary: () => `Right now ${money(left)} is left over. You need ${money(target)}, so cut ${money(target)} − ${money(left)} = ${money(cut)}`,
-      hint: "First find what's left over now. The cut is the difference between your savings goal and that amount.",
-      lesson: "Budgets are about choices — every dollar of fun money you trim goes straight to savings.",
-    };
-  }
-  const rent = exp[0][1];
-  const pct = Math.round((rent / income) * 100);
-  return {
-    category: "money",
-    visualHTML: visual,
-    promptText: "What percent of your take-home pay goes to rent? (Nearest whole percent.)",
-    inputs: [{ id: "p", label: "Percent", type: "number", min: 0, max: 100 }],
-    check: (v) => Number(v.p) === pct,
-    correctSummary: () => `${money(rent)} ÷ ${money(income)} = ${((rent / income) * 100).toFixed(1)}% ≈ ${pct}%`,
-    hint: "Divide rent by take-home pay, then multiply by 100.",
-    lesson: `A common rule of thumb is to keep rent at or below about 30% of your income. This one is ${pct > 30 ? "above" : "within"} that.`,
-  };
-}
 
 // Open-ended: many valid budgets, so it's graded by rules instead of one answer.
 function genBuildBudget(tier) {
@@ -614,37 +330,9 @@ function genBuildBudget(tier) {
         "This is called a zero-based budget — every dollar is assigned before the month starts. It doesn't mean spending it all: savings counts as a job!",
     };
   }
-  return genBudget(tier);
+  return genBuildBudget(tier);
 }
 
-function genCreditCard(tier) {
-  const rate = choice([1.5, 2, 2.5]);
-  const balance = randInt(20, 80) * 2500;
-  const pay = randInt(2, 6) * 1000;
-  const months = choice([1, 2]);
-  let b = balance;
-  const steps = [];
-  for (let m = 1; m <= months; m++) {
-    const after = b - pay;
-    const interest = Math.round((after * rate) / 100);
-    steps.push(`Month ${m}: ${money(b)} − ${money(pay)} = ${money(after)}, + ${rate}% interest (${money(interest)}) = ${money(after + interest)}`);
-    b = after + interest;
-  }
-  const visual = `<div class="doc"><div class="doc-title">💳 Credit Card Statement</div><table>
-    <tr><td>Balance owed</td><td class="num">${money(balance)}</td></tr>
-    <tr><td>Your payment each month</td><td class="num">${money(pay)}</td></tr>
-  </table><div class="fine-print" style="margin-top:8px">Interest of <b>${rate}% per month</b> is charged on any balance remaining after your payment.</div></div>`;
-  return {
-    category: "money",
-    visualHTML: visual,
-    promptText: `After ${months === 1 ? "one month" : "two months"} of payments and interest, how much do you owe? (Round interest to the nearest cent each month.)`,
-    inputs: [moneyInput("b", "You owe ($)")],
-    check: (v) => centsNear(v.b, b, months),
-    correctSummary: () => steps.join(". "),
-    hint: "Each month: subtract your payment first, THEN add the interest on what's left.",
-    lesson: `You paid ${money(pay * months)} but the balance only dropped by ${money(balance - b)}. That gap is interest — it's why paying the full balance is so powerful.`,
-  };
-}
 
 // ================================================================
 // FINE PRINT
@@ -697,7 +385,6 @@ function genReturnPolicy(tier) {
 
   const outcomes = ["Full refund", "Refund minus the restocking fee", "Store credit only", "No return allowed"];
   const ans = { clean: 0, opened: 1, noreceipt: 2, late: 3, final: 3 }[kind];
-  const back = [price, price - Math.round((price * fee) / 100), price, 0][ans];
 
   const policy = `<div class="doc fine-print"><div class="doc-title">${store} Return Policy</div><ul>
     <li>Most items may be returned within <b>${window} days</b> of purchase for a full refund to your original payment.</li>
@@ -707,13 +394,11 @@ function genReturnPolicy(tier) {
     <li>No returns after ${window} days.</li></ul></div>`;
   const scenario = `<div class="scenario">You want to return a <b>${name}</b> that cost ${money(price)}. ${timing} ${receipt} ${openedTxt} ${choice(DISTRACTORS)}</div>`;
 
-  const inputs = [selectInput("o", "What happens?", outcomes)];
-  if (tier === "hard") inputs.push(moneyInput("amt", "Money or credit back ($)"));
 
   const why = {
     clean: "Within the time limit, receipt in hand, nothing special — full refund",
-    opened: `Opened electronics get a ${fee}% restocking fee: ${money(price)} − ${money(price - back)} = ${money(back)}`,
-    noreceipt: `No receipt means store credit instead of cash — still the full ${money(price)}`,
+    opened: `It's opened electronics, so the ${fee}% restocking fee comes out of your refund`,
+    noreceipt: "No receipt means store credit instead of your money back",
     late: `${days} days is past the ${window}-day window — no return`,
     final: "Clearance items are final sale — no return, no matter what",
   }[kind];
@@ -721,13 +406,13 @@ function genReturnPolicy(tier) {
   return {
     category: "fineprint",
     visualHTML: policy + scenario,
-    promptText: tier === "hard" ? "Read the policy. What happens, and how much do you get back?" : "Read the policy. What happens when you try to return it?",
-    inputs,
-    check: (v) => Number(v.o) === ans && (tier !== "hard" || centsNear(v.amt, back, 1)),
-    correctSummary: () => (tier === "hard" ? `${why} (${money(back)} back)` : why),
+    promptText: "Read the policy. What happens when you try to return it?",
+    inputs: [selectInput("o", "What happens?", outcomes)],
+    check: (v) => Number(v.o) === ans,
+    correctSummary: () => why,
     hint:
       tier === "hard"
-        ? "First count the days between the two dates (watch for months with 30 vs. 31 days!). Then go down the policy rule by rule. Some details in the story don't matter at all."
+        ? "First figure out how long ago you bought it (use a calendar if you need to — months have 28 to 31 days). Then go down the policy rule by rule. Some details in the story don't matter at all."
         : "Check each rule against the story. Some details in the story don't matter at all — find the ones that do.",
     lesson: {
       clean: "Keep receipts (or take a photo of them) — they make returns painless.",
@@ -736,6 +421,201 @@ function genReturnPolicy(tier) {
       late: "Return windows are strict. Put the deadline in your phone the day you buy something pricey.",
       final: "'Final sale' means the deal is final too — be sure before you buy clearance.",
     }[kind],
+  };
+}
+
+function genPromo(tier) {
+  const kind = choice(tier === "medium" ? ["bogo", "oneItem", "exclusions"] : ["bogo", "oneItem", "exclusions", "shipping"]);
+
+  if (kind === "bogo") {
+    const thing = choice([["T-shirt", "T-shirt"], ["pair of jeans", "pair of jeans"], ["video game", "video game"]]);
+    const colors = shuffle(["red", "blue", "black", "green"]);
+    let a = randInt(15, 60) * 100 - 2;
+    let b = randInt(10, 50) * 100 - 2;
+    if (a === b) b -= 300;
+    const opts = [`The ${colors[0]} ${thing[0]} (${money(a)})`, `The ${colors[1]} ${thing[1]} (${money(b)})`, "Both — 50% off everything", "Whichever one you choose"];
+    const ans = a < b ? 0 : 1;
+    return {
+      category: "fineprint",
+      visualHTML: `<div class="doc" style="text-align:center"><b>Buy one, get one 50% off!</b><br><span class="fine-print">*Discount applies to the lower-priced item.</span></div>
+        <div class="scenario">You're buying a ${colors[0]} ${thing[0]} for ${money(a)} and a ${colors[1]} ${thing[1]} for ${money(b)}.</div>`,
+      promptText: "Which item gets the 50% discount?",
+      inputs: [selectInput("p", "Discounted item", opts)],
+      check: (v) => Number(v.p) === ans,
+      correctSummary: () => `The fine print says the LOWER-priced item — that's ${opts[ans].replace(/^The /, "the ")}`,
+      hint: "The answer is hiding in the tiny print under the big sign.",
+      lesson: "That asterisk (*) always means 'read the fine print.' Here it means the store picks which item is discounted — and it's never the expensive one.",
+    };
+  }
+  if (kind === "oneItem") {
+    const names = shuffle(["Headphones", "Hoodie", "Water bottle", "Phone charger", "Board game", "Sneakers"]).slice(0, 3);
+    const prices = shuffle([randInt(10, 20) * 100 - 1, randInt(22, 35) * 100 - 1, randInt(40, 70) * 100 - 1]);
+    const opts = names.map((n, i) => `${n} (${money(prices[i])})`);
+    const ans = prices.indexOf(Math.max(...prices));
+    return {
+      category: "fineprint",
+      visualHTML: `<div class="doc" style="text-align:center"><b>25% OFF any ONE item!</b><br><span class="fine-print">*Limit one item per purchase.</span></div>
+        <div class="scenario">You're buying: ${opts.join(", ")}.</div>`,
+      promptText: "Which item should you use the coupon on to save the MOST money?",
+      inputs: [selectInput("p", "Use it on", opts)],
+      check: (v) => Number(v.p) === ans,
+      correctSummary: () => `${opts[ans]} — a percent off saves the most on the most expensive item`,
+      hint: "25% of a big number is more than 25% of a small number.",
+      lesson: "Percent-off coupons → use them on the priciest item. Dollar-off coupons → it doesn't matter which item.",
+    };
+  }
+  if (kind === "exclusions") {
+    const excluded = choice([["Gift card", 2500], ["Clearance lamp", 1500], ["Gift card", 2000]]);
+    const regular = randInt(30, 52) * 100 + choice([0, 49, 99]);
+    const sub = regular + excluded[1];
+    const ok = regular >= 5000;
+    return {
+      category: "fineprint",
+      visualHTML: `<div class="doc" style="text-align:center"><b>$10 OFF orders of $50+</b><br><span class="fine-print">*Minimum purchase of $50.00 before tax. Gift cards and clearance items do not count toward the minimum.</span></div>
+        <div class="doc receipt"><table><tr><td>Regular-price items</td><td class="num">${money(regular)}</td></tr><tr><td>${excluded[0]}</td><td class="num">${money(excluded[1])}</td></tr>
+        <tr class="total-row"><td>Subtotal</td><td class="num">${money(sub)}</td></tr></table></div>`,
+      promptText: "Your subtotal is over $50. Does the $10 coupon work?",
+      inputs: [selectInput("p", "Coupon works?", ["Yes — the subtotal is over $50", `No — the ${excluded[0].toLowerCase()} doesn't count`])],
+      check: (v) => Number(v.p) === (ok ? 0 : 1),
+      correctSummary: () => (ok ? `Yes — even without the ${excluded[0].toLowerCase()}, the regular items reach $50` : `No — take out the ${excluded[0].toLowerCase()} and only ${money(regular)} counts, which is under $50`),
+      hint: "Read the second sentence of the fine print. What's left if you take out the things that don't count?",
+      lesson: "Coupon exclusions are everywhere. Stores advertise the big number and hide the rules in the small print.",
+    };
+  }
+  const cart = randInt(26, 33) * 100 + choice([0, 50]);
+  const ship = 799;
+  const socks = choice([499, 599, 899, 999]);
+  const withSocks = cart + socks >= 3500 ? cart + socks : cart + socks + ship;
+  const withoutSocks = cart + ship;
+  const ans = withSocks < withoutSocks ? 0 : 1;
+  return {
+    category: "fineprint",
+    visualHTML: `<div class="doc"><div class="doc-title">🚚 Online Store</div>FREE shipping on orders of <b>$35</b> or more!<div class="fine-print" style="margin-top:6px">*Orders under $35: shipping is ${money(ship)}.</div></div>
+      <div class="scenario">Your cart is ${money(cart)}. You could add a pair of socks for ${money(socks)} to get free shipping.</div>`,
+    promptText: "Which way costs LESS in total?",
+    inputs: [selectInput("p", "Cheaper", ["Add the socks", "Skip the socks, pay shipping"])],
+    check: (v) => Number(v.p) === ans,
+    correctSummary: () =>
+      `With socks: ${money(withSocks)}. Without: ${money(cart)} + ${money(ship)} = ${money(withoutSocks)}. ${ans === 0 ? "Adding socks is cheaper (and you get socks!)" : "Paying shipping is cheaper"}`,
+    hint: "Does adding the socks actually reach $35? Compare both totals.",
+    lesson: "Free-shipping minimums are designed to make you spend more. Sometimes it's worth it — but always check.",
+  };
+}
+
+function genPayStub(tier) {
+  const rate = randInt(14, 22) * 100 + choice([0, 25, 50]);
+  const hours = randInt(30, 40);
+  const gross = rate * hours;
+  const lines = [
+    ["Federal income tax", Math.round(gross * 0.1)],
+    ["State income tax", Math.round(gross * 0.04)],
+    ["Social Security", Math.round(gross * 0.062)],
+    ["Medicare", Math.round(gross * 0.0145)],
+    ["Health insurance", choice([2800, 3500, 4200])],
+  ];
+  const deductions = sum(lines.map((l) => l[1]));
+  const net = gross - deductions;
+  const period = randInt(5, 20);
+  const ytd = (c) => c * period;
+  const company = choice(["Riverside Grocery", "Summit Hardware", "Lakeview Pool & Fitness", "Copper Kettle Café"]);
+
+  const showYtd = tier !== "easy";
+  const row = (label, c, bold) =>
+    `<tr${bold ? ' class="total-row"' : ""}><td>${label}</td><td class="num">${money(c)}</td>${showYtd ? `<td class="num">${money(ytd(c))}</td>` : ""}</tr>`;
+  const visual = `<div class="doc"><div class="doc-title">💵 ${company}</div><div class="doc-sub">Pay stub · ${hours} hours × ${money(rate)}/hr${showYtd ? ` · Paycheck #${period} this year` : ""}</div>
+    <table><tr><th></th><th class="num">This check</th>${showYtd ? `<th class="num">Year to date</th>` : ""}</tr>
+    ${row("<b>Gross pay</b>", gross)}${lines.map(([n, c]) => row(n, c)).join("")}${row("Total deductions", deductions)}${row("NET PAY", net, true)}</table></div>`;
+
+  const qs = [
+    { q: "Which amount actually gets deposited into your bank account this paycheck?", a: net, why: "Net pay is what's left after every deduction — that's what you actually get" },
+    { q: "How much did you earn this paycheck BEFORE anything was taken out?", a: gross, why: "That's gross pay — your hours times your hourly rate, before deductions" },
+    { q: "How much was taken out of this paycheck in total?", a: deductions, why: "Look for the 'Total deductions' line" },
+  ];
+  if (showYtd) {
+    qs.push({ q: "How much have you paid in Social Security so far THIS YEAR?", a: ytd(lines[2][1]), why: "'Year to date' (YTD) adds up every paycheck since January" });
+    qs.push({ q: "How much have you taken home in total so far this year?", a: ytd(net), why: "Net pay, in the year-to-date column" });
+  }
+  const pick = choice(tier === "hard" ? qs.slice(2) : qs);
+  const pool = [gross, net, deductions, ...lines.map((l) => l[1])].concat(showYtd ? [ytd(gross), ytd(net), ytd(lines[2][1]), ytd(deductions)] : []);
+  const distractors = shuffle([...new Set(pool.filter((c) => c !== pick.a))]).slice(0, 3);
+  const opts = shuffle([pick.a, ...distractors]);
+  return {
+    category: "money",
+    visualHTML: visual,
+    promptText: pick.q,
+    inputs: [selectInput("a", "Amount", opts.map(money))],
+    check: (v) => Number(v.a) === opts.indexOf(pick.a),
+    correctSummary: () => `${money(pick.a)}. ${pick.why}`,
+    hint: "Gross = before deductions. Net = after. 'Year to date' = everything since January.",
+    lesson: "Social Security and Medicare (often labeled FICA) come out of almost every US paycheck — they fund benefits for retirees.",
+  };
+}
+
+const LABEL_FOODS = [
+  { name: "Potato Chips", size: "1 oz (about 15 chips)" },
+  { name: "Fruit Soda", size: "8 fl oz" },
+  { name: "Canned Chicken Noodle Soup", size: "1 cup" },
+  { name: "Granola Bars", size: "1 bar" },
+  { name: "Frozen Burrito", size: "1 burrito" },
+  { name: "Trail Mix", size: "¼ cup" },
+];
+
+function genNutritionLabel(tier) {
+  const food = choice(LABEL_FOODS);
+  const servings = choice([2, 2.5, 3, 4, 6]);
+  const cal = randInt(10, 30) * 10;
+  const nutrients = [
+    ["Total Fat", randInt(1, 18) + "g", randInt(1, 25)],
+    ["Sodium", randInt(5, 90) * 10 + "mg", randInt(1, 40)],
+    ["Total Sugars", randInt(0, 30) + "g", null],
+    ["Protein", randInt(1, 20) + "g", null],
+    ["Fiber", randInt(0, 8) + "g", randInt(0, 30)],
+  ];
+  // keep sodium's %DV clearly in the low (≤5) or high (≥20) zone, or clearly in between
+  const sodiumZone = choice(["low", "mid", "high"]);
+  nutrients[1][2] = sodiumZone === "low" ? randInt(1, 5) : sodiumZone === "mid" ? randInt(8, 16) : randInt(20, 40);
+  nutrients[1][1] = Math.round((nutrients[1][2] / 100) * 2300 / 10) * 10 + "mg";
+
+  const visual = `<div class="doc" style="font-family:Helvetica,Arial,sans-serif; border:2px solid #111; max-width:270px">
+    <div style="font-weight:900;font-size:1.4rem;border-bottom:6px solid #111">Nutrition Facts</div>
+    <div style="font-size:0.8rem;margin:4px 0">${food.name}</div>
+    <div><b>${servings} servings per container</b></div>
+    <div style="border-bottom:6px solid #111;padding-bottom:4px">Serving size <b>${food.size}</b></div>
+    <div style="display:flex;justify-content:space-between;font-weight:900;font-size:1.3rem;border-bottom:3px solid #111">Calories<span>${cal}</span></div>
+    <div style="text-align:right;font-size:0.7rem;font-weight:700">% Daily Value*</div>
+    ${nutrients.map(([n, amt, dv]) => `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #111"><span><b>${n}</b> ${amt}</span><span>${dv === null ? "" : dv + "%"}</span></div>`).join("")}
+    <div class="fine-print" style="margin-top:4px">*% Daily Value shows how much a nutrient in one serving adds to a daily diet. 5% DV or less is LOW. 20% DV or more is HIGH.</div></div>`;
+
+  const qs = [
+    { q: "How many servings are in this whole package?", opts: [String(servings), "1", String(servings * 2), String(cal)], a: String(servings), why: `The label says ${servings} servings per container`, tier: 0 },
+    { q: "What is ONE serving?", opts: [food.size, "The whole package", "Half the package", "100 grams"], a: food.size, why: `Serving size: ${food.size}`, tier: 0 },
+    {
+      q: "Is this food low or high in sodium?",
+      opts: ["Low in sodium", "Neither low nor high", "High in sodium"],
+      a: { low: "Low in sodium", mid: "Neither low nor high", high: "High in sodium" }[sodiumZone],
+      why: `Sodium is ${nutrients[1][2]}% DV. The fine print says 5% or less is low and 20% or more is high`,
+      tier: 1,
+    },
+    {
+      q: "The calories on the label are for…",
+      opts: ["One serving", "The whole package", "One bite", "A whole day"],
+      a: "One serving",
+      why: `They're per serving — eat the whole thing and you'd get ${servings} times as much`,
+      tier: 0,
+    },
+  ];
+  const usable = qs.filter((q) => (tier === "easy" ? q.tier === 0 : true));
+  const pick = tier === "easy" ? choice(usable) : choice([...usable, qs[2]]);
+  const opts = pick.q.startsWith("Is this food") ? pick.opts : shuffle([...new Set(pick.opts)]);
+  return {
+    category: "planning",
+    visualHTML: visual,
+    promptText: pick.q,
+    inputs: [selectInput("a", "Answer", opts)],
+    check: (v) => opts[Number(v.a)] === pick.a,
+    correctSummary: () => `${pick.a}. ${pick.why}`,
+    hint: "Everything you need is printed on the label — including the fine print at the bottom.",
+    lesson: "A single bag or bottle is often more than one serving. The top of the label is the most important fine print in the grocery store.",
   };
 }
 
@@ -795,90 +675,7 @@ function genWarranty(tier) {
   };
 }
 
-function genPromo(tier) {
-  const kinds = tier === "medium" ? ["bogo", "threshold"] : ["bogo", "threshold", "oneItem", "shipping"];
-  const kind = choice(kinds);
 
-  if (kind === "bogo") {
-    const thing = choice(["T-shirts", "pairs of jeans", "video games", "books"]);
-    let a = randInt(15, 60) * 100 - 2;
-    let b = randInt(10, 50) * 100 - 2;
-    if (a === b) b -= 300;
-    const lower = Math.min(a, b);
-    const total = a + b - lower / 2;
-    return promoProblem(
-      `<b>Buy one, get one 50% off!</b><br><span class="fine-print">*Discount applies to the lower-priced item.</span>`,
-      `You buy two ${thing}: one is ${money(a)} and the other is ${money(b)}.`,
-      "What do you pay (before tax)?",
-      total,
-      `The cheaper item (${money(lower)}) is half off: ${money(lower / 2)}. ${money(Math.max(a, b))} + ${money(lower / 2)} = ${money(total)}`,
-      "Only the CHEAPER item gets the discount. Find half of it, then add the full price of the other.",
-      "That asterisk (*) always means 'read the fine print.' Here it means the store picks which item is discounted — and it's never the expensive one."
-    );
-  }
-  if (kind === "threshold") {
-    const prices = [randInt(8, 25) * 100 + choice([0, 49, 99]), randInt(8, 25) * 100 + choice([0, 49, 99]), randInt(5, 15) * 100 + choice([0, 49, 99])];
-    const sub = sum(prices);
-    const total = sub >= 5000 ? sub - 1000 : sub;
-    return promoProblem(
-      `<b>$10 OFF</b> your order!<br><span class="fine-print">*On purchases of $50.00 or more, before tax.</span>`,
-      `Your cart: ${prices.map(money).join(", ")}.`,
-      "What do you pay (before tax)?",
-      total,
-      sub >= 5000 ? `Subtotal ${money(sub)} is at least $50, so take $10 off: ${money(total)}` : `Subtotal ${money(sub)} is under $50 — the coupon doesn't apply! You pay ${money(sub)}`,
-      "Add the cart first. Does it reach the minimum in the fine print?",
-      sub >= 5000
-        ? "Nice — you qualified. Be careful of buying extra stuff you don't need just to reach a minimum."
-        : `So close! Stores set minimums so you'll add ${money(5000 - sub)} more to your cart.`
-    );
-  }
-  if (kind === "oneItem") {
-    const prices = shuffle([randInt(10, 20) * 100 - 1, randInt(22, 35) * 100 - 1, randInt(40, 70) * 100 - 1]);
-    const max = Math.max(...prices);
-    const save = Math.round(max * 0.25);
-    const total = sum(prices) - save;
-    return promoProblem(
-      `<b>25% OFF any ONE item!</b><br><span class="fine-print">*Limit one item per purchase.</span>`,
-      `You're buying three things: ${prices.map(money).join(", ")}.`,
-      "Using the coupon in the smartest way, what is the LOWEST total you can pay?",
-      total,
-      `Use it on the most expensive item: 25% of ${money(max)} = ${money(save)} off. ${money(sum(prices))} − ${money(save)} = ${money(total)}`,
-      "25% off saves the most money on the most expensive item.",
-      "Percent-off coupons → use on the priciest item. Dollar-off coupons → it doesn't matter which item."
-    );
-  }
-  const cart = randInt(26, 33) * 100 + choice([0, 50]);
-  const ship = 799;
-  const socks = choice([499, 599, 899, 999]);
-  const withSocks = cart + socks >= 3500 ? cart + socks : cart + socks + ship;
-  const withoutSocks = cart + ship;
-  const ans = withSocks < withoutSocks ? 0 : 1;
-  return {
-    category: "fineprint",
-    visualHTML: `<div class="doc"><div class="doc-title">🚚 Online Store</div>FREE shipping on orders of <b>$35</b> or more!<div class="fine-print" style="margin-top:6px">*Orders under $35: shipping is ${money(ship)}.</div></div>
-      <div class="scenario">Your cart is ${money(cart)}. You could add a pair of socks for ${money(socks)} to get free shipping.</div>`,
-    promptText: "Which way costs LESS in total?",
-    inputs: [selectInput("p", "Cheaper", ["Add the socks", "Skip the socks, pay shipping"])],
-    check: (v) => Number(v.p) === ans,
-    correctSummary: () =>
-      `With socks: ${money(withSocks)}. Without: ${money(cart)} + ${money(ship)} = ${money(withoutSocks)}. ${ans === 0 ? "Adding socks is cheaper (and you get socks!)" : "Paying shipping is cheaper"}`,
-    hint: "Work out both totals. Does adding the socks actually reach $35?",
-    lesson: "Free-shipping minimums are designed to make you spend more. Sometimes it's worth it — but always do the math.",
-  };
-}
-
-function promoProblem(sign, story, prompt, total, work, hint, lesson) {
-  return {
-    category: "fineprint",
-    visualHTML: `<div class="doc" style="text-align:center">${sign}</div><div class="scenario">${story}</div>`,
-    promptText: prompt,
-    inputs: [moneyInput("t", "You pay ($)")],
-    check: (v) => centsNear(v.t, total, 1),
-    correctSummary: () => work,
-    hint,
-    lesson,
-  };
-}
 
 // ================================================================
 // HOW-TO
@@ -1163,141 +960,25 @@ function genBusSchedule(tier) {
   };
 }
 
-const RECIPES = [
-  {
-    name: "Pancakes",
-    serves: 4,
-    items: [["flour", 1.5, "cups"], ["milk", 1.25, "cups"], ["sugar", 2, "tablespoons"], ["baking powder", 2, "teaspoons"], ["salt", 0.5, "teaspoon"]],
-    extra: "1 egg",
-  },
-  {
-    name: "Mac & Cheese",
-    serves: 4,
-    items: [["elbow pasta", 2, "cups"], ["milk", 1.5, "cups"], ["shredded cheese", 2, "cups"], ["butter", 2, "tablespoons"], ["flour", 2, "tablespoons"]],
-    extra: "a pinch of salt",
-  },
-  {
-    name: "Chocolate Chip Cookies",
-    serves: 24,
-    items: [["butter", 1, "cup"], ["brown sugar", 0.75, "cup"], ["flour", 2.25, "cups"], ["chocolate chips", 2, "cups"], ["vanilla", 1, "teaspoon"]],
-    extra: "2 eggs",
-  },
-];
 
-function genRecipeScale(tier) {
-  const r = choice(RECIPES);
-  const factors = tier === "hard" ? [1.5, 3, 0.75] : [2, 0.5];
-  const f = choice(factors);
-  const target = r.serves * f;
-  const [ing, amt, unit] = choice(r.items);
-  const ans = amt * f;
-  const unitLabel = r.name.includes("Cookies") ? "cookies" : "people";
-  const visual = `<div class="doc"><div class="doc-title">📖 ${r.name}</div><div class="doc-sub">Makes ${r.serves} ${unitLabel === "cookies" ? "cookies" : "servings"}</div><ul class="step-list">${r.items
-    .map(([n, a, u]) => `<li><b>${fracStr(a)}</b> ${u} ${n}</li>`)
-    .join("")}<li>${r.extra}</li></ul></div>`;
-  return {
-    category: "planning",
-    visualHTML: visual,
-    promptText: `You need to make ${target} ${unitLabel === "cookies" ? "cookies" : "servings"}. How much <b>${ing}</b> do you need? (${unit} — decimals are fine, like 0.75)`,
-    inputs: [{ id: "a", label: unit, type: "number", min: 0, max: 100, step: 0.01 }],
-    check: (v) => numNear(v.a, ans, 0.02),
-    correctSummary: () => `${target} ÷ ${r.serves} = ×${f}. ${fracStr(amt)} × ${f} = ${fracStr(ans)} ${unit} (${ans})`,
-    hint: `First find the scale: ${target} ÷ ${r.serves}. Then multiply the amount by that number. (½ = 0.5, ¼ = 0.25, ¾ = 0.75)`,
-    lesson: f < 1 && r.extra.includes("egg") ? "Halving a recipe with one egg? Beat the egg in a cup and use half of it!" : "Measuring cups usually come in 1, ½, ⅓, and ¼ — scaling recipes is real-life fraction math.",
-  };
-}
 
-function genPacks(tier) {
-  const pair = choice([
-    { a: "hot dogs", aPack: 10, aPrice: 429, b: "hot dog buns", bPack: 8, bPrice: 279 },
-    { a: "burger patties", aPack: 6, aPrice: 899, b: "burger buns", bPack: 8, bPrice: 329 },
-    { a: "juice boxes", aPack: 8, aPrice: 449, b: "bags of chips", bPack: 12, bPrice: 799 },
-  ]);
-  const guests = randInt(9, 24);
-  const each = choice([1, 2]);
-  const need = guests * each;
-  const aPacks = Math.ceil(need / pair.aPack);
-  const bPacks = Math.ceil(need / pair.bPack);
-  const visual = `<div class="doc"><div class="doc-title">🎉 Party Shopping</div><table>
-    <tr><th>Item</th><th class="num">Per pack</th><th class="num">Price</th></tr>
-    <tr><td>${pair.a}</td><td class="num">${pair.aPack}</td><td class="num">${money(pair.aPrice)}</td></tr>
-    <tr><td>${pair.b}</td><td class="num">${pair.bPack}</td><td class="num">${money(pair.bPrice)}</td></tr>
-  </table><div class="doc-note">${guests} guests · each gets ${each} ${pair.a.replace(/s$/, "")}${each > 1 ? "s" : ""} and ${each} of the ${pair.b}</div></div>`;
 
-  if (tier === "medium") {
-    return {
-      category: "planning",
-      visualHTML: visual,
-      promptText: `How many packs of ${pair.b} do you need to buy?`,
-      inputs: [{ id: "p", label: "Packs", type: "number", min: 0, max: 100 }],
-      check: (v) => Number(v.p) === bPacks,
-      correctSummary: () => `You need ${need}. ${need} ÷ ${pair.bPack} = ${(need / pair.bPack).toFixed(2).replace(/\.00$/, "")}${need % pair.bPack ? ` → round UP to ${bPacks}` : ""} packs`,
-      hint: "Find how many you need in total, divide by the pack size, and round UP — you can't buy part of a pack.",
-      lesson: "When you can't buy part of something, always round up. Leftovers beat running out!",
-    };
-  }
-  const total = aPacks * pair.aPrice + bPacks * pair.bPrice;
-  return {
-    category: "planning",
-    visualHTML: visual,
-    promptText: `What is the total cost for the ${pair.a} AND the ${pair.b}?`,
-    inputs: [moneyInput("t", "Total ($)")],
-    check: (v) => centsNear(v.t, total),
-    correctSummary: () =>
-      `Need ${need} of each. ${aPacks} pack${aPacks > 1 ? "s" : ""} of ${pair.a} (${money(aPacks * pair.aPrice)}) + ${bPacks} pack${bPacks > 1 ? "s" : ""} of ${pair.b} (${money(bPacks * pair.bPrice)}) = ${money(total)}`,
-    hint: "For EACH item: total needed ÷ pack size, rounded up. Multiply packs by price, then add the two.",
-    lesson: "The packs don't match, so you'll end up with leftovers. Party planners call that 'the hot dog problem.'",
-  };
-}
-
-function genNutrition(tier) {
-  const foods = [
-    { name: "Potato Chips", size: "1 oz (about 15 chips)", servings: [2, 3, 4] },
-    { name: "Fruit Soda (20 fl oz bottle)", size: "8 fl oz", servings: [2.5] },
-    { name: "Trail Mix", size: "¼ cup", servings: [3, 4, 5] },
-    { name: "Cookies", size: "3 cookies", servings: [2, 3, 4] },
-  ];
-  const food = choice(tier === "easy" ? foods.filter((f) => !f.servings.includes(2.5)) : foods);
-  const servings = choice(food.servings);
-  const cal = randInt(10, 25) * 10;
-  const sugar = randInt(3, 20) * 2;
-  const askSugar = tier !== "easy" && Math.random() < 0.5;
-  const ans = askSugar ? sugar * servings : cal * servings;
-  const visual = `<div class="doc" style="font-family:Helvetica,Arial,sans-serif; border:2px solid #111; max-width:260px">
-    <div style="font-weight:900;font-size:1.4rem;border-bottom:6px solid #111">Nutrition Facts</div>
-    <div style="font-size:0.8rem;margin:4px 0">${food.name}</div>
-    <div><b>${servings} servings per container</b></div>
-    <div style="border-bottom:6px solid #111;padding-bottom:4px">Serving size <b>${food.size}</b></div>
-    <div style="display:flex;justify-content:space-between;font-weight:900;font-size:1.3rem;border-bottom:3px solid #111">Calories<span>${cal}</span></div>
-    <div style="border-bottom:1px solid #111">Total Sugars <b>${sugar}g</b></div>
-    <div class="fine-print" style="margin-top:4px">Amounts are per serving.</div></div>`;
-  return {
-    category: "planning",
-    visualHTML: visual,
-    promptText: `You eat or drink the WHOLE container. How many ${askSugar ? "grams of sugar" : "calories"} is that?`,
-    inputs: [{ id: "a", label: askSugar ? "Grams" : "Calories", type: "number", min: 0, max: 10000 }],
-    check: (v) => numNear(v.a, ans, 0.01),
-    correctSummary: () => `${servings} servings × ${askSugar ? sugar + "g" : cal} = ${ans}${askSugar ? "g" : " calories"}`,
-    hint: "The label's numbers are for ONE serving. Multiply by the number of servings in the container.",
-    lesson: "A single bag or bottle is often more than one serving — that fine print at the top of the label matters!",
-  };
-}
 
 // ---------- Pools ----------
 
 const POOLS = {
-  easy: [genReceiptTotal, genTip, genPaycheck, genSavingsGoal, genNutrition, genWarranty, genBusSchedule, genProcedure, genLifeFact, genLifeFact],
+  easy: [genPayStub, genNutritionLabel, genReturnPolicy, genWarranty, genWarranty, genBusSchedule, genProcedure, genProcedure, genLifeFact, genLifeFact],
   medium: [
-    genReceiptTotal, genUnitPrice, genTip, genPaycheck, genSavingsGoal, genBudget, genBuildBudget,
-    genReturnPolicy, genWarranty, genPromo,
+    genUnitPrice, genBuildBudget, genPayStub,
+    genReturnPolicy, genWarranty, genPromo, genPromo,
     genProcedure, genLifeFact,
-    genBusSchedule, genRecipeScale, genPacks, genNutrition,
+    genBusSchedule, genNutritionLabel,
   ],
   hard: [
-    genReceiptTotal, genUnitPrice, genTip, genPaycheck, genBudget, genBuildBudget, genBuildBudget, genCreditCard,
+    genUnitPrice, genBuildBudget, genBuildBudget, genPayStub,
     genReturnPolicy, genReturnPolicy, genWarranty, genPromo, genPromo,
     genProcedure, genLifeFact,
-    genBusSchedule, genRecipeScale, genPacks,
+    genBusSchedule,
   ],
 };
 
