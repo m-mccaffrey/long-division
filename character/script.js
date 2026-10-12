@@ -149,6 +149,7 @@ const SKILLS = [
   },
   {
     key: "baseball",
+    hidden: true,
     storageKey: "baseballQuestState",
     name: "Baseball",
     icon: "⚾",
@@ -166,6 +167,7 @@ const SKILLS = [
   },
   {
     key: "life",
+    hidden: true,
     storageKey: "lifeQuestState",
     name: "Life Skills",
     icon: "🧰",
@@ -185,6 +187,7 @@ const SKILLS = [
   },
   {
     key: "scriptquest",
+    hidden: true,
     storageKey: "scriptQuestState",
     name: "Script Quest",
     icon: "🎭",
@@ -204,6 +207,9 @@ const SKILLS = [
     ],
   },
 ];
+
+// Hidden skills are reachable by direct URL only and stay off this page.
+const VISIBLE_SKILLS = SKILLS.filter((s) => !s.hidden);
 
 const RANKS = [
   { min: 0, title: "Math Cadet" },
@@ -266,14 +272,14 @@ function renderHeader() {
     placeholder.hidden = false;
   }
 
-  const levelSum = SKILLS.reduce((sum, s) => sum + loadSkillStats(s.storageKey).level, 0);
+  const levelSum = VISIBLE_SKILLS.reduce((sum, s) => sum + loadSkillStats(s.storageKey).level, 0);
   document.getElementById("rankTitle").textContent = rankForLevelSum(levelSum);
   document.getElementById("rankSub").textContent = `Combined level ${levelSum} across all skills`;
 }
 
 function renderLevelChart() {
   const chart = document.getElementById("levelChart");
-  const rows = SKILLS.map((skill) => ({ skill, level: loadSkillStats(skill.storageKey).level }));
+  const rows = VISIBLE_SKILLS.map((skill) => ({ skill, level: loadSkillStats(skill.storageKey).level }));
   const maxLevel = Math.max(5, ...rows.map((r) => r.level));
   chart.innerHTML = rows
     .map(({ skill, level }) => {
@@ -291,7 +297,7 @@ function renderLevelChart() {
 function renderSkills() {
   const grid = document.getElementById("skillsGrid");
   grid.innerHTML = "";
-  SKILLS.forEach((skill) => {
+  VISIBLE_SKILLS.forEach((skill) => {
     const stats = loadSkillStats(skill.storageKey);
     const threshold = skill.xpBase * stats.level;
     const pct = Math.min(100, Math.round((stats.xp / threshold) * 100));
