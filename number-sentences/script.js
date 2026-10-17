@@ -362,25 +362,29 @@ function problem(category, st, accept, hint) {
 // ---------- Easy: + and − ----------
 
 function genJoin() {
-  const [n] = twoNames();
+  const [n1, n2] = twoNames();
   const [it, e] = choice(THINGS);
   const a = randInt(3, 20), b = randInt(2, 15), c = a + b;
   const st = choice([
-    () => story(e, [`${n} has ${num(a)} ${it}.`, `Then ${n} gets ${num(b)} more.`], `How many ${it} does ${n} have now?`),
+    () => story(e, [`${n1} has ${num(a)} ${it}.`, `Then ${n1} gets ${num(b)} more.`], `How many ${it} does ${n1} have now?`),
     () => story(e, [`There are ${num(a)} ${it} on the table and ${num(b)} ${it} in a bag.`], `How many ${it} are there altogether?`),
+    () => story(e, [`${n1} has ${num(a)} ${it}.`, `${n2} has ${num(b)} ${it}.`], `How many ${it} do they have together?`),
+    () => story(e, [`${n1} found ${num(a)} ${it} at the park.`, `${n2} gave ${n1} ${num(b)} more.`], `How many ${it} does ${n1} have now?`),
   ])();
   return problem("addsub", st, [[add(a, b), N(c)]], "When things are put together or more are added, the total gets bigger — that's adding.");
 }
 
 function genSeparate() {
-  const [n] = twoNames();
+  const [n1, n2] = twoNames();
   const [it, e] = choice(THINGS);
   const a = randInt(8, 30), b = randInt(2, a - 2), r = a - b;
   const st = choice([
-    () => story(e, [`${n} had ${num(a)} ${it}.`, `${n} gave ${num(b)} of them to a friend.`], `How many ${it} does ${n} have left?`),
-    () => story(e, [`There were ${num(a)} ${it} in a box.`, `${n} took out ${num(b)}.`], `How many ${it} are still in the box?`),
+    () => story(e, [`${n1} had ${num(a)} ${it}.`, `${n1} gave ${num(b)} of them to ${n2}.`], `How many ${it} does ${n1} have left?`),
+    () => story(e, [`There were ${num(a)} ${it} in a box.`, `${n1} took out ${num(b)}.`], `How many ${it} are still in the box?`),
+    () => story(e, [`${n1} had ${num(a)} ${it}.`, `${n1} lost ${num(b)} of them on the way home.`], `How many ${it} does ${n1} have now?`),
+    () => story(e, [`${n1} had ${num(a)} ${it}.`, `${n1} used ${num(b)} for an art project.`], `How many ${it} are left?`),
   ])();
-  return problem("addsub", st, [[sub(a, b), N(r)]], "“Gave away,” “took out,” and “left” mean the amount gets smaller — that's subtracting. Start with the bigger number.");
+  return problem("addsub", st, [[sub(a, b), N(r)]], "“Gave away,” “lost,” “took out,” and “left” mean the amount gets smaller — that's subtracting. Start with the bigger number.");
 }
 
 function genThreeAddends() {
@@ -391,38 +395,8 @@ function genThreeAddends() {
   return problem("addsub", st, [[add(add(a, b), c), N(a + b + c)]], "“In all” means add everything together. You can add more than two numbers in one sentence!");
 }
 
-function genChangeUnknown() {
-  const [n] = twoNames();
-  const [it, e] = choice(THINGS);
-  const a = randInt(3, 18), b = randInt(2, 15), c = a + b;
-  const st = story(e, [`${n} had ${num(a)} ${it}.`, `Then ${n} found some more.`, `Now ${n} has ${num(c)} ${it}.`], `How many ${it} did ${n} find?`);
-  return problem("addsub", st, [[sub(c, a), N(b)], [add(a, b), N(c)]], `${n} started with ${a} and ended with ${c}. What do you add to ${a} to get ${c}? Or: what's ${c} take away ${a}?`);
-}
 
-function genStartUnknown() {
-  const [n] = twoNames();
-  const [it, e] = choice(THINGS);
-  const r = randInt(3, 18), b = randInt(2, 12), s = r + b;
-  const st = story(e, [`${n} had some ${it}.`, `${n} gave ${num(b)} away and has ${num(r)} left.`], `How many ${it} did ${n} have at the start?`);
-  return problem("addsub", st, [[add(r, b), N(s)], [sub(s, b), N(r)]], "Work backwards: put back the ones that were given away. What you have left PLUS what you gave away is what you started with.");
-}
 
-function genCompare() {
-  const [n1, n2] = twoNames();
-  const [it, e] = choice(THINGS);
-  const b = randInt(3, 20), d = randInt(2, 15), a = b + d;
-  const kind = choice(["diff", "more", "fewer"]);
-  if (kind === "diff") {
-    const st = story(e, [`${n1} has ${num(a)} ${it}.`, `${n2} has ${num(b)} ${it}.`], `How many more ${it} does ${n1} have than ${n2}?`);
-    return problem("addsub", st, [[sub(a, b), N(d)], [add(b, d), N(a)]], "“How many more” means find the difference between the two amounts — subtract the smaller from the bigger.");
-  }
-  if (kind === "more") {
-    const st = story(e, [`${n2} has ${num(b)} ${it}.`, `${n1} has ${num(d)} more ${it} than ${n2}.`], `How many ${it} does ${n1} have?`);
-    return problem("addsub", st, [[add(b, d), N(a)]], `${n1} has everything ${n2} has, plus ${d} more.`);
-  }
-  const st = story(e, [`${n1} has ${num(a)} ${it}.`, `${n2} has ${num(d)} fewer ${it} than ${n1}.`], `How many ${it} does ${n2} have?`);
-  return problem("addsub", st, [[sub(a, d), N(b)]], "“Fewer” means less — start with the amount you know and take away the difference.");
-}
 
 // ---------- Medium: × and ÷ ----------
 
@@ -588,7 +562,7 @@ function genCompareGroups() {
 // ---------- Pools ----------
 
 const POOLS = {
-  easy: [genJoin, genJoin, genSeparate, genSeparate, genThreeAddends, genChangeUnknown, genStartUnknown, genCompare],
+  easy: [genJoin, genJoin, genJoin, genSeparate, genSeparate, genSeparate, genThreeAddends],
   medium: [genGroups, genArray, genShare, genShare, genMeasure, genTimesAs, genCost],
   hard: [genAddGroups, genGroupsMinus, genCombineShare, genTwoKinds, genPagesLeft, genChange, genBakeShare, genTeams, genSaveSplit, genCompareGroups],
 };
