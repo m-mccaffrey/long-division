@@ -172,7 +172,11 @@ function norm(a) {
       parts.push((positive ? "+" : "-") + norm(n));
     }
   })(a, true);
-  return `${tag}(${parts.sort().join(",")})`;
+  const identity = additive ? "0" : "1";
+  const kept = parts.filter((x) => x.slice(1) !== identity);
+  if (!kept.length) return identity;
+  if (kept.length === 1 && kept[0][0] === "+") return kept[0].slice(1);
+  return `${tag}(${kept.sort().join(",")})`;
 }
 
 const PREC = { "+": 1, "-": 1, "*": 2, "/": 2 };
@@ -337,7 +341,8 @@ function story(emoji, sentences, question, extraFor) {
   const parts = [...sentences];
   let extra = false;
   if (extraFor) {
-    parts.splice(randInt(1, parts.length), 0, choice(EXTRA_FACTS)(extraFor));
+    // Only at the start or end, so it never splits sentences that refer to each other ("Each one has…").
+    parts.splice(choice([0, parts.length]), 0, choice(EXTRA_FACTS)(extraFor));
     extra = true;
   }
   return {
@@ -398,7 +403,7 @@ function genThreeAddends() {
 
 
 
-// ---------- Medium: × and ÷ ----------
+// ---------- Medium: × and ÷ (one step) ----------
 
 const CONTAINERS = [["bags", "🛍️"], ["boxes", "📦"], ["jars", "🫙"], ["baskets", "🧺"], ["bowls", "🥣"]];
 
@@ -458,113 +463,183 @@ function genCost(tier) {
   return problem("muldiv", st, [[mul(q, price), N(q * price)]], "Same price for each one? Number of items × price of one = total cost.");
 }
 
-// ---------- Hard: multi-step, parentheses ----------
+// ---------- Medium: more than two terms (+ and −) ----------
 
-function extraChance(n) {
-  return Math.random() < 0.3 ? n : null;
+function genBus(tier) {
+  let riders = randInt(8, 20);
+  const steps = [];
+  const sentences = [`A bus leaves the station with ${num(riders)} people on it.`];
+  let expr = N(riders);
+  const stops = randInt(2, 3);
+  for (let i = 0; i < stops; i++) {
+    const off = randInt(1, Math.min(6, riders - 1));
+    const on = randInt(1, 7);
+    const order = Math.random() < 0.5;
+    const where = ["At the first stop", "At the next stop", "At the last stop"][i === stops - 1 ? 2 : Math.min(i, 1)];
+    if (order) {
+      sentences.push(`${where}, ${num(off)} people get off and ${num(on)} get on.`);
+      expr = add(sub(expr, off), on);
+    } else {
+      sentences.push(`${where}, ${num(on)} people get on and ${num(off)} get off.`);
+      expr = sub(add(expr, on), off);
+    }
+    riders = riders - off + on;
+    steps.push(off, on);
+  }
+  const st = story("🚌", sentences, "How many people are on the bus now?", Math.random() < 0.3 ? "The driver" : null);
+  return problem("addsub", st, [[expr, N(evaluate(expr))]], "Start with the people on the bus. Getting on is +, getting off is −. You can put them all in one long sentence!");
 }
 
-function genAddGroups() {
+function genUpsAndDowns(tier) {
+  const [n1, n2, n3] = shuffle(NAMES).slice(0, 3);
+  const [it, e] = choice(THINGS);
+  const a = randInt(8, 25), b = randInt(3, 12), c = randInt(2, a - 2), d = randInt(2, 10);
+  const st = choice([
+    () => ({ s: story(e, [`${n1} had ${num(a)} ${it}.`, `${n2} gave ${n1} ${num(b)} more.`, `Then ${n1} lost ${num(c)}.`, `Later, ${n3} gave ${n1} ${num(d)} more.`], `How many ${it} does ${n1} have now?`, Math.random() < 0.3 ? n1 : null), x: add(sub(add(a, b), c), d) }),
+    () => ({ s: story(e, [`${n1} had ${num(a)} ${it}.`, `${n1} gave ${num(c)} to ${n2} and got ${num(b)} from ${n3}.`], `How many ${it} does ${n1} have now?`, Math.random() < 0.3 ? n1 : null), x: add(sub(a, c), b) }),
+  ])();
+  return problem("addsub", st.s, [[st.x, N(evaluate(st.x))]], "Go in order. Every time the amount grows, add. Every time it shrinks, subtract.");
+}
+
+function genFourAddends(tier) {
   const [n] = twoNames();
   const [it, e] = choice(THINGS);
-  const a = randInt(3, 20), g = randInt(2, 6), k = randInt(3, 10);
-  const st = story(e, [`${n} had ${num(a)} ${it}.`, `Then ${n} bought ${num(g)} packs with ${num(k)} ${it} in each pack.`], `How many ${it} does ${n} have now?`, extraChance(n));
-  return problem("multistep", st, [[add(a, mul(g, k)), N(a + g * k)]], "Two steps: first find how many came in the packs, then add what was already there. Remember: × happens before + even without parentheses.");
+  const v = [randInt(2, 15), randInt(2, 15), randInt(2, 15), randInt(2, 15)];
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday"];
+  const st = story(e, [`${n} collected ${it} all week: ${v.map((x, i) => `${num(x)} on ${days[i]}`).join(", ").replace(/, ([^,]*)$/, ", and $1")}.`], `How many ${it} did ${n} collect in all?`);
+  return problem("addsub", st, [[add(add(add(v[0], v[1]), v[2]), v[3]), N(v[0] + v[1] + v[2] + v[3])]], "“In all” means add everything together — all four numbers go in one sentence.");
 }
 
-function genGroupsMinus() {
-  const [n] = twoNames();
+// ---------- Hard: long stories, several steps, parentheses ----------
+
+const extraMaybe = (n) => (Math.random() < 0.3 ? n : null);
+
+function genLostAndShared() {
+  const [a, b, c] = shuffle(NAMES).slice(0, 3);
   const [it, e] = choice(THINGS);
-  const g = randInt(3, 8), k = randInt(3, 10), b = randInt(2, g * k - 3);
-  const st = story(e, [`${num(g)} friends each brought ${num(k)} ${it} to the party.`, `They used ${num(b)} of them in a game.`], `How many ${it} are left?`, extraChance(n));
-  return problem("multistep", st, [[sub(mul(g, k), b), N(g * k - b)]], "Find how many they brought in all, then take away what got used.");
+  for (;;) {
+    const x = randInt(4, 15), lost = randInt(1, 3), y = randInt(3, 15), z = choice([0, 0, randInt(2, 8)]);
+    const people = 3;
+    const total = x - lost + y + z;
+    if (total % people) continue;
+    const st = story(e, [
+      `${a} had ${num(x)} ${it} but lost ${num(lost)} on the way to ${b}'s house.`,
+      `${b} had ${num(y)} ${it}.`,
+      z === 0 ? `Then ${c}, who had no ${it}, came over too.` : `Then ${c} came over with ${num(z)} ${it}.`,
+      `The ${num(people)} friends put all their ${it} together and split them evenly.`,
+    ], `How many ${it} does each friend get?`, extraMaybe(a));
+    const x0 = add(add(sub(x, lost), y), z);
+    return problem("multistep", st, [[div(x0, people), N(total / people)], [mul(people, total / people), x0]],
+      "First find how many they have all together (watch out for the ones that got lost!). Then split that evenly — use parentheses so the adding happens first.");
+  }
 }
 
-function genCombineShare() {
-  const [n1, n2] = twoNames();
-  const [it, e] = choice(THINGS);
-  const g = randInt(2, 6), r = randInt(3, 9), total = g * r;
-  const a = randInt(2, total - 2), b = total - a;
-  const st = story(e, [`${n1} has ${num(a)} ${it} and ${n2} has ${num(b)} ${it}.`, `They put them all together and split them equally into ${num(g)} boxes.`], `How many ${it} go in each box?`, extraChance(n1));
-  return problem("multistep", st, [[div(add(a, b), g), N(r)], [mul(g, r), add(a, b)]], "Put them together FIRST, then divide. Parentheses show what to do first: (__ + __) ÷ __.");
+function genPoolAndBuy() {
+  const [a, b] = twoNames();
+  for (;;) {
+    const x = randInt(8, 30), y = randInt(8, 30), price = randInt(5, x + y - 4);
+    if ((x + y - price) % 2) continue;
+    const thing = choice(["a board game", "a soccer ball", "a big pizza", "a puzzle", "a kite"]);
+    const st = story("💵", [`${a} has $${num(x)} and ${b} has $${num(y)}.`, `They put their money together and buy ${thing} for $${num(price)}.`, `Then they split the money that's left evenly between the ${num(2)} of them.`], `How many dollars does each of them get?`, extraMaybe(a));
+    const pool = sub(add(x, y), price);
+    return problem("multistep", st, [[div(pool, 2), N((x + y - price) / 2)], [mul(2, (x + y - price) / 2), pool]],
+      "Put the money together, take away what they spent, THEN split it. The splitting goes last, so everything before it needs parentheses.");
+  }
 }
 
-function genTwoKinds() {
-  const [n] = twoNames();
-  const kids = randInt(3, 8), k1 = randInt(2, 6), k2 = randInt(2, 6);
-  const [it1, e1] = choice(THINGS.slice(0, 7));
-  const [it2, e2] = choice(THINGS.slice(7));
-  const st = story(`${e1}${e2}`, [`${n} is making party bags for ${num(kids)} kids.`, `Each bag gets ${num(k1)} ${it1} and ${num(k2)} ${it2}.`], `How many things go into the bags in all?`, extraChance(n));
-  return problem(
-    "multistep",
-    st,
-    [[mul(kids, add(k1, k2)), N(kids * (k1 + k2))], [add(mul(kids, k1), mul(kids, k2)), N(kids * (k1 + k2))]],
-    "Find how many things are in ONE bag, then multiply by the number of bags: __ × (__ + __)."
-  );
+function genTicketsChange() {
+  const [a, b] = twoNames();
+  for (;;) {
+    const c = randInt(3, 8), g1 = randInt(1, 4), g2 = randInt(1, 4), bill = choice([20, 50]);
+    const cost = (g1 + g2) * c, change = bill - cost;
+    if (change <= 0 || change % 2) continue;
+    const st = story("🎟️", [`Movie tickets cost $${num(c)} each.`, `${a} needs ${num(g1)} tickets and ${b} needs ${num(g2)}.`, `They pay together with a $${num(bill)} bill and split the change evenly between the ${num(2)} of them.`], `How many dollars of change does each one get?`, extraMaybe(a));
+    const ans = change / 2;
+    const left1 = sub(bill, mul(add(g1, g2), c));
+    const left2 = sub(sub(bill, mul(g1, c)), mul(g2, c));
+    return problem("multistep", st, [[div(left1, 2), N(ans)], [div(left2, 2), N(ans)]],
+      "Steps: how many tickets in all → what they cost → the change from the bill → split it. Parentheses keep each step in the right order.");
+  }
 }
 
-function genPagesLeft() {
-  const [n] = twoNames();
-  const a = randInt(4, 12), d = randInt(3, 7), r = randInt(10, 60), p = a * d + r;
-  const st = story("📖", [`A book has ${num(p)} pages.`, `${n} reads ${num(a)} pages every day for ${num(d)} days.`], `How many pages are left to read?`, extraChance(n));
-  return problem("multistep", st, [[sub(p, mul(a, d)), N(r)]], "First: how many pages did they read in all? Then take that away from the whole book.");
-}
-
-function genChange() {
-  const [n] = twoNames();
-  const c = randInt(3, 9), g = randInt(2, 5);
-  const bill = [10, 20, 50].find((b) => b > c * g);
-  const st = story("🎟️", [`Movie tickets cost $${num(c)} each.`, `${n} buys ${num(g)} tickets and pays with a $${num(bill)} bill.`], `How many dollars of change does ${n} get back?`, extraChance(n));
-  return problem("multistep", st, [[sub(bill, mul(g, c)), N(bill - g * c)]], "Find the total cost first, then subtract it from the money paid.");
-}
-
-function genBakeShare() {
-  const [n] = twoNames();
-  const g = randInt(2, 6), r = randInt(2, 8), e = randInt(1, 6), p = g * r + e;
-  const st = story("🍪", [`${n} baked ${num(p)} cookies.`, `${n} ate ${num(e)} of them and put the rest into ${num(g)} bags, with the same number in each bag.`], `How many cookies are in each bag?`, extraChance(n));
-  return problem("multistep", st, [[div(sub(p, e), g), N(r)], [mul(g, r), sub(p, e)]], "First find how many were left after eating some. Then share THAT equally: (__ − __) ÷ __.");
-}
-
-function genTeams() {
-  const k = randInt(3, 6), t = randInt(3, 8), total = k * t;
-  const a = randInt(2, total - 2), b = total - a;
-  const st = story("⚽", [`There are ${num(a)} third graders and ${num(b)} fourth graders at field day.`, `Everyone is split into teams of ${num(k)}.`], `How many teams are there?`, extraChance("The coach"));
-  return problem("multistep", st, [[div(add(a, b), k), N(t)], [mul(k, t), add(a, b)]], "How many kids are there in all? Then figure out how many teams that makes.");
+function genBakeSale() {
+  const [a, b] = twoNames();
+  for (;;) {
+    const trays = randInt(2, 4), per = randInt(6, 12), extra = randInt(3, 15), dropped = randInt(1, 5), bag = randInt(3, 6);
+    const total = trays * per + extra - dropped;
+    if (total % bag || total <= 0) continue;
+    const st = story("🍪", [`${a} baked ${num(trays)} trays of cookies with ${num(per)} cookies on each tray.`, `${b} brought ${num(extra)} more cookies.`, `On the way to the bake sale, ${num(dropped)} cookies fell on the floor.`, `They packed the rest into bags of ${num(bag)}.`], `How many bags did they fill?`, extraMaybe(a));
+    const rest = sub(add(mul(trays, per), extra), dropped);
+    return problem("multistep", st, [[div(rest, bag), N(total / bag)], [mul(bag, total / bag), rest]],
+      "Find all the cookies (trays × cookies per tray, plus the extras), take away the dropped ones, then divide into bags.");
+  }
 }
 
 function genSaveSplit() {
-  const [n] = twoNames();
-  const g = randInt(2, 4), r = randInt(3, 10), w = randInt(4, 10), wk = randInt(2, 5);
-  let s = w * wk - g * r;
-  if (s <= 0) return genSaveSplit();
-  const st = story("🐷", [`${n} earns $${num(w)} a week for ${num(wk)} weeks.`, `${n} spends $${num(s)} on a game, then splits the rest equally into ${num(g)} jars.`], `How many dollars go into each jar?`, extraChance(n));
-  return problem(
-    "multistep",
-    st,
-    [[div(sub(mul(w, wk), s), g), N(r)], [mul(g, r), sub(mul(w, wk), s)]],
-    "Three steps! Money earned (×), minus what was spent (−), then split into jars (÷). Use parentheses so the ÷ happens last."
-  );
+  const [n, g] = twoNames();
+  for (;;) {
+    const w = randInt(3, 10), wk = randInt(2, 6), gift = randInt(5, 20), spend = randInt(5, 25), jars = randInt(2, 4);
+    const left = w * wk + gift - spend;
+    if (left <= 0 || left % jars) continue;
+    const st = story("🐷", [`${n} earns $${num(w)} a week walking dogs for ${num(wk)} weeks.`, `${g} gives ${n} $${num(gift)} for a birthday.`, `${n} spends $${num(spend)} on a video game and splits the rest evenly into ${num(jars)} savings jars.`], `How many dollars go in each jar?`, extraMaybe(n));
+    const rest = sub(add(mul(w, wk), gift), spend);
+    return problem("multistep", st, [[div(rest, jars), N(left / jars)], [mul(jars, left / jars), rest]],
+      "Four things happen: earn (×), gift (+), spend (−), split (÷). Write them in order and wrap everything before the ÷ in parentheses.");
+  }
 }
 
-function genCompareGroups() {
-  const [n1, n2] = twoNames();
-  const [it, e] = choice(THINGS);
-  const k = randInt(3, 10), g2 = randInt(2, 6), g1 = g2 + randInt(1, 4);
-  const st = story(e, [`${n1} has ${num(g1)} packs of ${it}.`, `${n2} has ${num(g2)} packs.`, `Every pack has ${num(k)} ${it}.`], `How many more ${it} does ${n1} have than ${n2}?`, extraChance(n1));
-  return problem(
-    "multistep",
-    st,
-    [[sub(mul(g1, k), mul(g2, k)), N((g1 - g2) * k)], [mul(sub(g1, g2), k), N((g1 - g2) * k)]],
-    `Two ways work: find each person's total and subtract, or figure out how many more PACKS ${n1} has and multiply.`
-  );
+function genPartyBags() {
+  const [n] = twoNames();
+  const kids = randInt(4, 9), k1 = randInt(2, 5), k2 = randInt(2, 5);
+  const [it1, e1] = choice(THINGS.slice(0, 7));
+  const [it2, e2] = choice(THINGS.slice(7));
+  const have = randInt(3, kids * (k1 + k2) - 3);
+  const st = story(`${e1}${e2}`, [`${n} is making party bags for ${num(kids)} kids.`, `Each bag gets ${num(k1)} ${it1} and ${num(k2)} ${it2}.`, `${n} already has ${num(have)} things to put in the bags.`], `How many more things does ${n} need to buy?`, extraMaybe(n));
+  const ans = kids * (k1 + k2) - have;
+  return problem("multistep", st, [[sub(mul(kids, add(k1, k2)), have), N(ans)], [sub(add(mul(kids, k1), mul(kids, k2)), have), N(ans)]],
+    "How many things go in ONE bag? How many for ALL the bags? Then take away what's already there.");
+}
+
+function genFieldTrip() {
+  for (;;) {
+    const a = randInt(10, 30), b = randInt(10, 30), t = randInt(2, 6), v = choice([6, 7, 8, 10, 12]);
+    const total = a + b + t;
+    if (total % v) continue;
+    const st = story("🚐", [`${num(a)} third graders and ${num(b)} fourth graders are going on a field trip.`, `${num(t)} teachers are going too.`, `Each van holds ${num(v)} people, and every van is full.`], `How many vans do they need?`, extraMaybe("The bus driver"));
+    const people = add(add(a, b), t);
+    return problem("multistep", st, [[div(people, v), N(total / v)], [mul(v, total / v), people]],
+      "Count EVERYONE who's going (don't forget the teachers), then divide into vans.");
+  }
+}
+
+function genBookPages() {
+  const [n] = twoNames();
+  const a = randInt(5, 15), d = randInt(3, 6), sat = randInt(10, 30), left = randInt(10, 60);
+  const p = a * d + sat + left;
+  const st = story("📖", [`${n}'s book has ${num(p)} pages.`, `${n} reads ${num(a)} pages a day for ${num(d)} days, then ${num(sat)} more pages on Saturday.`], `How many pages does ${n} still have to read?`, extraMaybe(n));
+  return problem("multistep", st, [[sub(p, add(mul(a, d), sat)), N(left)]],
+    "How many pages did they read in all? (Days × pages, plus Saturday.) Take that away from the whole book.");
+}
+
+function genPizzaParty() {
+  const [a, b] = twoNames();
+  for (;;) {
+    const pizzas = randInt(2, 5), slices = choice([6, 8]), e1 = randInt(1, 4), e2 = randInt(1, 4), friends = randInt(2, 6);
+    const rest = pizzas * slices - e1 - e2;
+    if (rest <= 0 || rest % friends) continue;
+    const st = story("🍕", [`There are ${num(pizzas)} pizzas, and each one is cut into ${num(slices)} slices.`, `${a} eats ${num(e1)} slices and ${b} eats ${num(e2)}.`, `The rest are shared evenly by ${num(friends)} other friends.`], `How many slices does each of those friends get?`, extraMaybe(a));
+    const r = sub(sub(mul(pizzas, slices), e1), e2);
+    return problem("multistep", st, [[div(r, friends), N(rest / friends)], [mul(friends, rest / friends), r]],
+      "All the slices (pizzas × slices), minus what got eaten, then shared. Parentheses go around everything before the ÷.");
+  }
 }
 
 // ---------- Pools ----------
 
 const POOLS = {
-  easy: [genJoin, genJoin, genJoin, genSeparate, genSeparate, genSeparate, genThreeAddends],
-  medium: [genGroups, genArray, genShare, genShare, genMeasure, genTimesAs, genCost],
-  hard: [genAddGroups, genGroupsMinus, genCombineShare, genTwoKinds, genPagesLeft, genChange, genBakeShare, genTeams, genSaveSplit, genCompareGroups],
+  easy: [genJoin, genJoin, genSeparate, genSeparate],
+  medium: [genBus, genUpsAndDowns, genThreeAddends, genFourAddends, genGroups, genArray, genShare, genMeasure, genTimesAs, genCost],
+  hard: [genLostAndShared, genPoolAndBuy, genTicketsChange, genBakeSale, genSaveSplit, genPartyBags, genFieldTrip, genBookPages, genPizzaParty],
 };
 
 // ---------- Rendering: stats & badges ----------
