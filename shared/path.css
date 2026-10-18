@@ -97,3 +97,9 @@
 .controls {
   align-items: center;
 }
+
+.badge.earned.carried {
+  background: rgba(255, 255, 255, 0.85);
+  color: #374151;
+  box-shadow: none;
+}

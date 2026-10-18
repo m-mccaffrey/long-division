@@ -135,8 +135,27 @@ const Path = {
     const st = (s) => {
       if (!s.paths) s.paths = {};
       if (!s.paths[id]) s.paths[id] = { p: 0, total: 0, streak: 0, highStreak: 0, topStreak: 0, best: 0, bestHigh: 0, bestTop: 0, free: 0, tiers: Array(n).fill(0), cats: {} };
-      return s.paths[id];
+      const x = s.paths[id];
+      if (!x.seeded) carryOver(s, x);
+      return x;
     };
+
+    // Kids who played before the path existed (badges are paid out, so nothing quick should be re-earnable):
+    // skip the Easy warm-up, and pre-award — marked "carried over" — the quick badges their history already proves.
+    function carryOver(s, x) {
+      x.seeded = true;
+      const hadHistory = (s.totalSolved || 0) - x.total > 0 || (s.earnedBadges || []).some((b) => !b.includes(":"));
+      if (!hadHistory) return;
+      x.p = Math.max(x.p, sched.warm + 2);
+      s.carriedBadges = s.carriedBadges || [];
+      const proven = [[`${id}:first`, true], [`${id}:streak5`, (s.bestStreak || 0) >= 5]];
+      proven.forEach(([bid, ok]) => {
+        if (ok && !s.earnedBadges.includes(bid)) {
+          s.earnedBadges.push(bid);
+          s.carriedBadges.push(bid);
+        }
+      });
+    }
     const allAt1 = sched.ramps[0].start + sched.ramps[0].len;
 
     // Milestones along the path; categories fill in the middle, extras top it up to 15.
@@ -283,9 +302,14 @@ const Path = {
         badges.forEach((b) => {
           const el = document.createElement("div");
           const earned = stats.earnedBadges.includes(b.id);
-          el.className = "badge" + (earned ? " earned" : "");
-          el.title = b.req;
-          el.innerHTML = earned ? `🏆 ${b.label}` : `🔒 ${b.label}<span class="badge-req">${b.req}</span>`;
+          const carried = earned && (stats.carriedBadges || []).includes(b.id);
+          el.className = "badge" + (earned ? " earned" : "") + (carried ? " carried" : "");
+          el.title = carried ? "Carried over from before the update" : b.req;
+          el.innerHTML = carried
+            ? `✔️ ${b.label}<span class="badge-req">carried over</span>`
+            : earned
+            ? `🏆 ${b.label}`
+            : `🔒 ${b.label}<span class="badge-req">${b.req}</span>`;
           row.appendChild(el);
         });
       },
