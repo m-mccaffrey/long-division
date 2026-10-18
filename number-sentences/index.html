@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Number Sentence Quest</title>
 <link rel="stylesheet" href="style.css?v=1" />
+<link rel="stylesheet" href="../shared/path.css?v=2" />
 </head>
 <body>
   <div class="app">
@@ -51,11 +52,7 @@
     </p>
 
     <section class="controls">
-      <div class="control-group" id="difficultyGroup">
-        <button class="pill" data-difficulty="easy">Easy</button>
-        <button class="pill" data-difficulty="medium">Medium</button>
-        <button class="pill" data-difficulty="hard">Hard</button>
-      </div>
+      <div class="path-meter" id="pathMeter"></div>
       <div class="control-group" id="modeGroup">
         <button class="pill" data-mode="guided">Guided Mode</button>
         <button class="pill" data-mode="free">Free Mode</button>
@@ -82,13 +79,14 @@
     </main>
 
     <section class="badges-panel">
-      <h2>🏅 Badges</h2>
+      <h2>🏅 Badges <span class="badges-count" id="badgesCount"></span></h2>
       <div class="badges" id="badgesRow"></div>
     </section>
   </div>
 
   <div class="confetti-layer" id="confettiLayer"></div>
 
-  <script src="script.js?v=3"></script>
+  <script src="../shared/path.js?v=2"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>

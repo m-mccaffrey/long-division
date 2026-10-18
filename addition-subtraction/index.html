@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Add &amp; Subtract Quest</title>
 <link rel="stylesheet" href="style.css?v=4" />
+<link rel="stylesheet" href="../shared/path.css?v=2" />
 </head>
 <body>
   <div class="app">
@@ -51,10 +52,7 @@
     </p>
 
     <section class="controls">
-      <div class="control-group" id="difficultyGroup">
-        <button class="pill" data-difficulty="twoDigit">Two-Digit</button>
-        <button class="pill" data-difficulty="threeDigit">Three-Digit</button>
-      </div>
+      <div class="path-meter" id="pathMeter"></div>
       <div class="control-group" id="operationGroup">
         <button class="pill" data-operation="add">Addition</button>
         <button class="pill" data-operation="sub">Subtraction</button>
@@ -89,13 +87,14 @@
     </main>
 
     <section class="badges-panel">
-      <h2>🏅 Badges</h2>
+      <h2>🏅 Badges <span class="badges-count" id="badgesCount"></span></h2>
       <div class="badges" id="badgesRow"></div>
     </section>
   </div>
 
   <div class="confetti-layer" id="confettiLayer"></div>
 
-  <script src="script.js?v=6"></script>
+  <script src="../shared/path.js?v=2"></script>
+  <script src="script.js?v=7"></script>
 </body>
 </html>

@@ -17,18 +17,11 @@ const DIFFICULTY = {
   },
 };
 
-const BADGE_DEFS = [
-  { id: "streak_5", label: "Streak x5", check: (s) => s.bestStreak >= 5 },
-  { id: "streak_10", label: "Streak x10", check: (s) => s.bestStreak >= 10 },
-  { id: "streak_20", label: "Unstoppable", check: (s) => s.bestStreak >= 20 },
-  { id: "three_digit_solve", label: "Three-Digit Champ", check: (s) => s.threeDigitSolved >= 1 },
-  { id: "carry_solve", label: "Carry Captain", check: (s) => s.carrySolved >= 1 },
-  { id: "borrow_solve", label: "Borrow Boss", check: (s) => s.borrowSolved >= 1 },
-];
+const PATH = Path.create("addsub");
+const BADGE_DEFS = PATH.badges;
 
 const STORAGE_KEY = "additionSubtractionQuestState";
 
-const TIER_UNLOCK = { threeDigit: 3 };
 
 // ---------- Persisted stats ----------
 
@@ -40,9 +33,6 @@ function loadStats() {
     streak: 0,
     bestStreak: 0,
     totalSolved: 0,
-    threeDigitSolved: 0,
-    carrySolved: 0,
-    borrowSolved: 0,
     earnedBadges: [],
   };
   try {
@@ -80,28 +70,23 @@ function xpForLevel(level) {
 }
 
 function addPoints(basePoints) {
-  const prevLevel = stats.level;
   stats.score += basePoints;
   stats.xp += basePoints;
   while (stats.xp >= xpForLevel(stats.level)) {
     stats.xp -= xpForLevel(stats.level);
     stats.level += 1;
   }
-  const unlockedNewTier = Object.values(TIER_UNLOCK).some((req) => prevLevel < req && stats.level >= req);
   saveStats();
   renderStats();
   updateSelectorUI();
-  if (unlockedNewTier) launchConfetti();
 }
 
 function registerSolve() {
+  PATH.onSolve(stats, state.difficulty, state.problem.regroup ? [state.problem.op === "add" ? "carry" : "borrow"] : [], state.mode);
   const p = state.problem;
   stats.totalSolved += 1;
   stats.streak += 1;
   if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
-  if (state.difficulty === "threeDigit") stats.threeDigitSolved += 1;
-  if (p.op === "add" && p.regroup) stats.carrySolved += 1;
-  if (p.op === "sub" && p.regroup) stats.borrowSolved += 1;
   checkBadges();
   saveStats();
   renderStats();
@@ -109,6 +94,7 @@ function registerSolve() {
 }
 
 function registerMiss() {
+  PATH.onMiss(stats);
   stats.streak = 0;
   saveStats();
   renderStats();
@@ -273,15 +259,7 @@ function renderStats() {
 }
 
 function renderBadges() {
-  const row = document.getElementById("badgesRow");
-  row.innerHTML = "";
-  BADGE_DEFS.forEach((b) => {
-    const el = document.createElement("div");
-    const earned = stats.earnedBadges.includes(b.id);
-    el.className = "badge" + (earned ? " earned" : "");
-    el.textContent = (earned ? "🏆 " : "🔒 ") + b.label;
-    row.appendChild(el);
-  });
+  PATH.renderBadges(stats);
 }
 
 // ---------- Confetti ----------
@@ -305,20 +283,6 @@ function launchConfetti() {
 // ---------- UI: difficulty / operation / mode selectors ----------
 
 function setupSelectors() {
-  document.querySelectorAll("#difficultyGroup .pill").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tier = btn.dataset.difficulty;
-      const req = TIER_UNLOCK[tier];
-      if (req && stats.level < req) {
-        showFeedback(`Reach level ${req} to unlock this difficulty!`, false);
-        shakeCard();
-        return;
-      }
-      state.difficulty = tier;
-      updateSelectorUI();
-      newProblem();
-    });
-  });
   document.querySelectorAll("#operationGroup .pill").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.operation = btn.dataset.operation;
@@ -330,15 +294,7 @@ function setupSelectors() {
 }
 
 function updateSelectorUI() {
-  document.querySelectorAll("#difficultyGroup .pill").forEach((btn) => {
-    const tier = btn.dataset.difficulty;
-    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
-    const req = TIER_UNLOCK[tier];
-    const locked = req && stats.level < req;
-    btn.classList.toggle("locked", !!locked);
-    btn.textContent = locked ? `🔒 ${btn.dataset.label} (Lv ${req})` : btn.dataset.label;
-    btn.classList.toggle("active", tier === state.difficulty && !locked);
-  });
+  PATH.renderMeter(stats, state.difficulty);
   document.querySelectorAll("#operationGroup .pill").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.operation === state.operation);
   });
@@ -351,6 +307,8 @@ function newProblem() {
     clearTimeout(pendingAdvanceTimeout);
     pendingAdvanceTimeout = null;
   }
+  state.difficulty = PATH.pickTier(stats);
+  PATH.renderMeter(stats, state.difficulty);
   state.problem = generateProblem(state.difficulty, state.operation);
   document.getElementById("feedback").textContent = "";
   document.getElementById("feedback").className = "feedback";

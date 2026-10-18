@@ -6,18 +6,11 @@ const DIFFICULTY = {
   hard: { label: "Hard", points: 45 },
 };
 
-const BADGE_DEFS = [
-  { id: "streak_5", label: "Streak x5", check: (s) => s.bestStreak >= 5 },
-  { id: "streak_10", label: "Streak x10", check: (s) => s.bestStreak >= 10 },
-  { id: "streak_20", label: "Unstoppable", check: (s) => s.bestStreak >= 20 },
-  { id: "hard_solve", label: "Hard Mode Hero", check: (s) => s.hardSolved >= 1 },
-  { id: "missing_factor_solve", label: "Fact Finder", check: (s) => s.missingFactorSolved >= 1 },
-  { id: "word_solve", label: "Story Solver", check: (s) => s.wordSolved >= 1 },
-];
+const PATH = Path.create("multiplication1");
+const BADGE_DEFS = PATH.badges;
 
 const STORAGE_KEY = "multiplicationQuestState";
 
-const TIER_UNLOCK = { medium: 3, hard: 5 };
 
 const LEGACY_KEYS = [
   { key: "multiplication1QuestState", xpBase: 130 },
@@ -75,9 +68,6 @@ function loadStats() {
     streak: 0,
     bestStreak: 0,
     totalSolved: 0,
-    hardSolved: 0,
-    missingFactorSolved: 0,
-    wordSolved: 0,
     earnedBadges: [],
   };
   try {
@@ -121,27 +111,22 @@ function xpForLevel(level) {
 }
 
 function addPoints(basePoints) {
-  const prevLevel = stats.level;
   stats.score += basePoints;
   stats.xp += basePoints;
   while (stats.xp >= xpForLevel(stats.level)) {
     stats.xp -= xpForLevel(stats.level);
     stats.level += 1;
   }
-  const unlockedNewTier = Object.values(TIER_UNLOCK).some((req) => prevLevel < req && stats.level >= req);
   saveStats();
   renderStats();
   updateSelectorUI();
-  if (unlockedNewTier) launchConfetti();
 }
 
 function registerSolve(category) {
+  PATH.onSolve(stats, state.difficulty, [category], state.mode);
   stats.totalSolved += 1;
   stats.streak += 1;
   if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
-  if (state.difficulty === "hard") stats.hardSolved += 1;
-  if (category === "missingFactor") stats.missingFactorSolved += 1;
-  if (category === "word") stats.wordSolved += 1;
   checkBadges();
   saveStats();
   renderStats();
@@ -149,6 +134,7 @@ function registerSolve(category) {
 }
 
 function registerMiss() {
+  PATH.onMiss(stats);
   stats.streak = 0;
   saveStats();
   renderStats();
@@ -249,15 +235,7 @@ function renderStats() {
 }
 
 function renderBadges() {
-  const row = document.getElementById("badgesRow");
-  row.innerHTML = "";
-  BADGE_DEFS.forEach((b) => {
-    const el = document.createElement("div");
-    const earned = stats.earnedBadges.includes(b.id);
-    el.className = "badge" + (earned ? " earned" : "");
-    el.textContent = (earned ? "🏆 " : "🔒 ") + b.label;
-    row.appendChild(el);
-  });
+  PATH.renderBadges(stats);
 }
 
 // ---------- Confetti ----------
@@ -281,20 +259,6 @@ function launchConfetti() {
 // ---------- UI: selectors ----------
 
 function setupSelectors() {
-  document.querySelectorAll("#difficultyGroup .pill").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tier = btn.dataset.difficulty;
-      const req = TIER_UNLOCK[tier];
-      if (req && stats.level < req) {
-        showFeedback(`Reach level ${req} to unlock this difficulty!`, false);
-        shakeCard();
-        return;
-      }
-      state.difficulty = tier;
-      updateSelectorUI();
-      newProblem();
-    });
-  });
   document.querySelectorAll("#modeGroup .pill").forEach((btn) => {
     btn.addEventListener("click", () => {
       state.mode = btn.dataset.mode;
@@ -306,15 +270,7 @@ function setupSelectors() {
 }
 
 function updateSelectorUI() {
-  document.querySelectorAll("#difficultyGroup .pill").forEach((btn) => {
-    const tier = btn.dataset.difficulty;
-    if (!btn.dataset.label) btn.dataset.label = btn.textContent;
-    const req = TIER_UNLOCK[tier];
-    const locked = req && stats.level < req;
-    btn.classList.toggle("locked", !!locked);
-    btn.textContent = locked ? `🔒 ${btn.dataset.label} (Lv ${req})` : btn.dataset.label;
-    btn.classList.toggle("active", tier === state.difficulty && !locked);
-  });
+  PATH.renderMeter(stats, state.difficulty);
   document.querySelectorAll("#modeGroup .pill").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.mode === state.mode);
   });
@@ -327,6 +283,8 @@ function newProblem() {
     clearTimeout(pendingAdvanceTimeout);
     pendingAdvanceTimeout = null;
   }
+  state.difficulty = PATH.pickTier(stats);
+  PATH.renderMeter(stats, state.difficulty);
   const pool = POOLS[state.difficulty];
   const gen = choice(pool);
   state.problem = gen(state.difficulty);
