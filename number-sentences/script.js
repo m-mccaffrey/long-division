@@ -112,7 +112,7 @@ function checkBadges() {
     }
   });
   if (newlyEarned.length) {
-    launchConfetti();
+    Path.celebrateBadges(newlyEarned.map((b) => b.label));
   }
 }
 
@@ -641,10 +641,10 @@ function renderBadges() {
 
 // ---------- Confetti ----------
 
-function launchConfetti() {
+function launchConfetti(count = 60) {
   const layer = document.getElementById("confettiLayer");
   const colors = ["#f97316", "#facc15", "#22c55e", "#06b6d4", "#4f46e5", "#ec4899"];
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < count; i++) {
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     piece.style.left = Math.random() * 100 + "vw";
@@ -788,7 +788,7 @@ function handleSubmit() {
     const base = DIFFICULTY[state.difficulty].points * (state.mode === "free" ? 1.15 : 1);
     addPoints(Math.round(firstTry ? base : base / 2));
     registerSolve(p);
-    if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
+    if (stats.streak > 0 && stats.streak % 5 === 0) Path.celebrateStreak(stats.streak);
     pendingAdvanceTimeout = setTimeout(newProblem, 2200);
     return;
   }

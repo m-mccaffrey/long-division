@@ -103,3 +103,44 @@
   color: #374151;
   box-shadow: none;
 }
+
+.celebration {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translate(-50%, -150%);
+  z-index: 1000;
+  text-align: center;
+  border-radius: 16px;
+  padding: 10px 22px;
+  font-weight: 800;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition: transform 0.35s ease;
+  pointer-events: none;
+  max-width: calc(100% - 32px);
+}
+
+.celebration.show {
+  transform: translate(-50%, 0);
+}
+
+.celebration.badge {
+  background: linear-gradient(135deg, #facc15, #f97316);
+  color: #4a1d00;
+  padding: 14px 28px;
+}
+
+.celebration.badge .celebration-title {
+  font-size: 1.4rem;
+}
+
+.celebration.badge .celebration-sub {
+  font-size: 1rem;
+  margin-top: 2px;
+}
+
+.celebration.streak {
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: 1rem;
+}

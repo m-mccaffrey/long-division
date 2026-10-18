@@ -316,3 +316,35 @@ const Path = {
     };
   },
 };
+
+// Celebrations: badges get a big gold banner + full confetti; streaks a small one, so the
+// (paid-out) badge moment is unmistakable.
+let lastBadgeCelebration = 0;
+
+function showCelebration(kind, html, ms) {
+  let el = document.getElementById("celebration");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "celebration";
+    document.body.appendChild(el);
+  }
+  el.className = `celebration ${kind}`;
+  el.innerHTML = html;
+  void el.offsetWidth;
+  el.classList.add("show");
+  clearTimeout(el._hide);
+  el._hide = setTimeout(() => el.classList.remove("show"), ms);
+}
+
+Path.celebrateBadges = (labels) => {
+  lastBadgeCelebration = Date.now();
+  const title = labels.length > 1 ? `🏅 ${labels.length} new badges!` : "🏅 New badge!";
+  showCelebration("badge", `<div class="celebration-title">${title}</div><div class="celebration-sub">${labels.join(" · ")}</div>`, 3500);
+  launchConfetti(90);
+};
+
+Path.celebrateStreak = (streak) => {
+  if (Date.now() - lastBadgeCelebration < 3000) return;
+  showCelebration("streak", `🔥 ${streak} in a row!`, 1800);
+  launchConfetti(20);
+};

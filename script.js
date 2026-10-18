@@ -122,7 +122,7 @@ function checkBadges() {
     }
   });
   if (newlyEarned.length) {
-    launchConfetti();
+    Path.celebrateBadges(newlyEarned.map((b) => b.label));
   }
 }
 
@@ -180,10 +180,10 @@ function renderBadges() {
 
 // ---------- Confetti ----------
 
-function launchConfetti() {
+function launchConfetti(count = 60) {
   const layer = document.getElementById("confettiLayer");
   const colors = ["#f97316", "#facc15", "#22c55e", "#06b6d4", "#7c3aed", "#ec4899"];
-  for (let i = 0; i < 60; i++) {
+  for (let i = 0; i < count; i++) {
     const piece = document.createElement("div");
     piece.className = "confetti-piece";
     piece.style.left = Math.random() * 100 + "vw";
@@ -489,7 +489,7 @@ function handleFinalSubmit() {
     popCard();
     addPoints(DIFFICULTY[state.difficulty].points);
     registerSolve();
-    if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
+    if (stats.streak > 0 && stats.streak % 5 === 0) Path.celebrateStreak(stats.streak);
     pendingAdvanceTimeout = setTimeout(newProblem, 1600);
   } else {
     showFeedback(`Not quite. Correct answer: ${quotient} remainder ${remainder}.`, false);
@@ -531,7 +531,7 @@ function handleFreeSubmit() {
     popCard();
     addPoints(Math.round(DIFFICULTY[state.difficulty].points * 1.15));
     registerSolve();
-    if (stats.streak > 0 && stats.streak % 5 === 0) launchConfetti();
+    if (stats.streak > 0 && stats.streak % 5 === 0) Path.celebrateStreak(stats.streak);
     pendingAdvanceTimeout = setTimeout(newProblem, 1600);
   } else {
     showFeedback(`Not quite. Correct answer: ${quotient} remainder ${remainder}.`, false);
