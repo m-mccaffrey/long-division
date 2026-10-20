@@ -11,7 +11,7 @@ const SKILLS = [
     color: "#7c3aed",
     xpBase: 130,
     urls: [{ label: "Play", url: "../index.html" }],
-    badges: ['division'].flatMap((id) => Path.create(id).badges),
+    badges: ['division'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "addsub",
@@ -21,7 +21,7 @@ const SKILLS = [
     color: "#0d9488",
     xpBase: 180,
     urls: [{ label: "Play", url: "../addition-subtraction/index.html" }],
-    badges: ['addsub'].flatMap((id) => Path.create(id).badges),
+    badges: ['addsub'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "datetime",
@@ -34,7 +34,7 @@ const SKILLS = [
       { label: "Play 1", url: "../datetime1/index.html" },
       { label: "Play 2", url: "../datetime2/index.html" },
     ],
-    badges: ['datetime1', 'datetime2'].flatMap((id) => Path.create(id).badges),
+    badges: ['datetime1', 'datetime2'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "multiplication",
@@ -47,7 +47,7 @@ const SKILLS = [
       { label: "Play 1", url: "../multiplication1/index.html" },
       { label: "Play 2", url: "../multiplication2/index.html" },
     ],
-    badges: ['multiplication1', 'multiplication2'].flatMap((id) => Path.create(id).badges),
+    badges: ['multiplication1', 'multiplication2'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "money",
@@ -60,7 +60,7 @@ const SKILLS = [
       { label: "Play 1", url: "../money1/index.html" },
       { label: "Play 2", url: "../money2/index.html" },
     ],
-    badges: ['money1', 'money2'].flatMap((id) => Path.create(id).badges),
+    badges: ['money1', 'money2'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "rulers",
@@ -73,7 +73,7 @@ const SKILLS = [
       { label: "Play 1", url: "../rulers1/index.html" },
       { label: "Play 2", url: "../rulers2/index.html" },
     ],
-    badges: ['rulers1', 'rulers2'].flatMap((id) => Path.create(id).badges),
+    badges: ['rulers1', 'rulers2'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "angles",
@@ -86,7 +86,7 @@ const SKILLS = [
       { label: "Play 1", url: "../angles1/index.html" },
       { label: "Play 2", url: "../angles2/index.html" },
     ],
-    badges: ['angles1', 'angles2'].flatMap((id) => Path.create(id).badges),
+    badges: ['angles1', 'angles2'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "sentences",
@@ -96,7 +96,7 @@ const SKILLS = [
     color: "#1d4ed8",
     xpBase: 150,
     urls: [{ label: "Play", url: "../number-sentences/index.html" }],
-    badges: ['sentences'].flatMap((id) => Path.create(id).badges),
+    badges: ['sentences'].filter((id) => !(IS_OLDER && OLDER_LOCKED[id])).flatMap((id) => Path.create(id).badges),
   },
   {
     key: "baseball",

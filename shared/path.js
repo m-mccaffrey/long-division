@@ -125,8 +125,58 @@ function pathSchedule(n) {
   return { warm: 8, ramps: [{ start: 8, len: 20 }, { start: 38, len: 20 }], master: 78 };
 }
 
+// ---------- Player profile (per device) ----------
+// A parent sets it once by opening any quest with ?player=older (or ?player=younger to undo).
+const PROFILE_KEY = "mathQuestPlayerProfile";
+(() => {
+  const m = location.search.match(/[?&]player=(older|younger)\b/);
+  if (m) localStorage.setItem(PROFILE_KEY, m[1]);
+})();
+const IS_OLDER = localStorage.getItem(PROFILE_KEY) === "older";
+
+// The "1" quests are below an older kid's level; their "2" version is where to go instead.
+const OLDER_LOCKED = {
+  datetime1: ["datetime2", "Time & Calendar Quest 2"],
+  multiplication1: ["multiplication2", "Multiplication Quest 2"],
+  money1: ["money2", "Money Quest 2"],
+  rulers1: ["rulers2", "Rulers Quest 2"],
+  angles1: ["angles2", "Angles Quest 2"],
+};
+// Where an older kid's path starts (progress points; see pathSchedule). Never moves anyone backward.
+const OLDER_FLOORS = { addsub: 22, sentences: 18, division: 0 };
+
+class QuestLocked extends Error {}
+window.addEventListener("error", (e) => {
+  if (e.error instanceof QuestLocked) e.preventDefault();
+});
+
+if (IS_OLDER) {
+  document.addEventListener("DOMContentLoaded", () => {
+    Object.keys(OLDER_LOCKED).forEach((dir) => {
+      document.querySelectorAll(`a[href*="${dir}/"]`).forEach((a) => {
+        const next = a.nextSibling;
+        if (next && next.nodeType === 3 && next.textContent.trim() === "·") next.remove();
+        else {
+          const prev = a.previousSibling;
+          if (prev && prev.nodeType === 3 && prev.textContent.trim() === "·") prev.remove();
+        }
+        a.remove();
+      });
+    });
+  });
+}
+
 const Path = {
   create(id) {
+    if (IS_OLDER && OLDER_LOCKED[id]) {
+      const app = document.querySelector(".app");
+      app.innerHTML = `<div class="quest-locked"><div class="quest-locked-icon">🔒</div>
+        <h2>This quest is for younger players</h2>
+        <p>You're ready for the next one!</p>
+        <a class="btn primary" href="../${OLDER_LOCKED[id][0]}/index.html">Go to ${OLDER_LOCKED[id][1]} ›</a>
+        <p><a href="../character/index.html">🧑 My Character</a></p></div>`;
+      throw new QuestLocked(id);
+    }
     const cfg = PATH_CONFIG[id];
     const n = cfg.tiers.length;
     const sched = pathSchedule(n);
@@ -137,6 +187,7 @@ const Path = {
       if (!s.paths[id]) s.paths[id] = { p: 0, total: 0, streak: 0, highStreak: 0, topStreak: 0, best: 0, bestHigh: 0, bestTop: 0, free: 0, tiers: Array(n).fill(0), cats: {} };
       const x = s.paths[id];
       if (!x.seeded) carryOver(s, x);
+      if (IS_OLDER && floor > 0 && !x.floored) applyFloor(s, x);
       return x;
     };
 
@@ -157,6 +208,29 @@ const Path = {
       });
     }
     const allAt1 = sched.ramps[0].start + sched.ramps[0].len;
+    const floor = IS_OLDER ? OLDER_FLOORS[id] || 0 : 0;
+
+    // Older kid: start at the floor (only ever forward), and mark the quick badges below it as carried over.
+    function applyFloor(s, x) {
+      x.floored = true;
+      x.p = Math.max(x.p, floor);
+      const r = sched.ramps[0];
+      const below = [
+        ["first", true],
+        ["streak5", true],
+        ["t1first", floor > r.start],
+        ["t1x10", floor >= r.start + 10],
+        ["t1all", floor >= allAt1],
+      ];
+      s.carriedBadges = s.carriedBadges || [];
+      below.forEach(([key, ok]) => {
+        const bid = `${id}:${key}`;
+        if (ok && !s.earnedBadges.includes(bid)) {
+          s.earnedBadges.push(bid);
+          s.carriedBadges.push(bid);
+        }
+      });
+    }
 
     // Milestones along the path; categories fill in the middle, extras top it up to 15.
     const B = (key, label, req, check) => ({ id: `${id}:${key}`, label, req, check: (s) => check(st(s)) });
@@ -265,7 +339,7 @@ const Path = {
       },
       onMiss(stats) {
         const x = st(stats);
-        x.p = Math.max(0, x.p - 1);
+        x.p = Math.max(floor, x.p - 1);
         x.streak = 0;
         x.highStreak = 0;
         x.topStreak = 0;
